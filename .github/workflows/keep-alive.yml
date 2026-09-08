@@ -1,0 +1,17 @@
+# Keeps the free-tier Render backend awake by pinging it every 10 minutes.
+# Free Render services sleep after ~15 min of inactivity; this prevents that.
+# The ping is harmless (GET /) and also warms the service after any cold start.
+name: Keep backend awake
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+permissions: {}
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render backend
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 90 https://ai-teaching-backend.onrender.com/ || true)
+          echo "Health ping HTTP status: $code"

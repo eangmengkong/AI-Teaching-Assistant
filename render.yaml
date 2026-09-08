@@ -1,10 +1,16 @@
-# Render Blueprint - always-on backend (24/7 Telegram reminders + Google Calendar sync)
+# Render Blueprint - FREE tier backend (24/7 Telegram reminders + Google Calendar sync)
 #
 # Deploy: push this repo to GitHub, then in Render dashboard: "New +" -> "Blueprint"
 # and select the repo. Fill in the `sync: false` env vars afterwards.
 #
-# IMPORTANT: use an ALWAYS-ON plan (Starter or higher). Free tiers sleep after
-# inactivity and your reminders/digests will be missed while asleep.
+# FREE TIER + KEEP-ALIVE: free services sleep after ~15 min of inactivity.
+# The included GitHub Actions workflow (.github/workflows/keep-alive.yml) pings
+# the service every 10 minutes so it stays awake. The reminder queue is also
+# sleep-tolerant: anything due while asleep is delivered right after wake-up
+# and the daily digest is deduped per day, so nothing is lost or duplicated.
+#
+# NOTE: free tier has no persistent disk - re-upload course PDFs after a
+# redeploy (redeploys only happen when you push new code).
 
 services:
   - type: web
@@ -12,18 +18,12 @@ services:
     runtime: docker
     rootDir: backend
     dockerfilePath: ./Dockerfile
-    plan: starter
+    plan: free
     healthCheckPath: /
     autoDeploy: true
     # Run exactly ONE instance: the Telegram bot uses long-polling, and a
     # second replica would compete for updates and double-send messages.
     numInstances: 1
-    # Persistent storage for uploaded course PDFs (textbook/workbook pages).
-    # Without a disk, uploads are wiped on every deploy (ephemeral filesystem).
-    disk:
-      name: uploads
-      mountPath: /data/uploads
-      sizeGB: 1
     envVars:
       - key: DATABASE_URL
         sync: false          # your Neon/Postgres asyncpg URL (sslmode required)
@@ -61,8 +61,6 @@ services:
       # AND the Google Cloud Console entry to match.
       - key: GOOGLE_REDIRECT_URI
         value: https://ai-teaching-backend.onrender.com/api/v1/calendar/oauth2callback
-      - key: UPLOAD_DIR
-        value: /data/uploads
       - key: DAILY_DIGEST_ENABLED
         value: "true"
       - key: DAILY_DIGEST_HOUR
