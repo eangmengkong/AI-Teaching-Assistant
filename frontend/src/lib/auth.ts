@@ -1,5 +1,12 @@
 import { API_BASE, api, type AuthSession } from './api';
 
+/**
+ * Auth endpoints always live under /api/v1. NEXT_PUBLIC_API_URL may or may not
+ * already include that prefix (production sets it WITH the prefix, localhost
+ * without), so normalize it once here instead of hardcoding it in every URL.
+ */
+const API_V1 = /\/api\/v1$/.test(API_BASE) ? API_BASE : `${API_BASE}/api/v1`;
+
 const TOKEN_KEY = 'ai_ta_token';
 
 export type { AuthSession };
@@ -40,7 +47,7 @@ export function isLoggedIn(): boolean {
 
 /** Exchange email/password for a bearer token via the OAuth2 form endpoint. */
 export async function login(email: string, password: string): Promise<AuthSession> {
-  const res = await fetch(`${API_BASE}/api/v1/auth/token`, {
+  const res = await fetch(`${API_V1}/auth/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ username: email, password }),
@@ -60,7 +67,7 @@ export async function register(input: {
   password: string;
   full_name?: string | null;
 }): Promise<AuthSession> {
-  const res = await fetch(`${API_BASE}/api/v1/auth/register`, {
+  const res = await fetch(`${API_V1}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -84,7 +91,7 @@ export interface PasswordResetResult {
 
 /** Ask the backend to send a password-reset link to the user's Telegram. */
 export async function requestPasswordReset(email: string): Promise<PasswordResetResult> {
-  const res = await fetch(`${API_BASE}/api/v1/auth/forgot-password`, {
+  const res = await fetch(`${API_V1}/auth/forgot-password`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
@@ -96,7 +103,7 @@ export async function requestPasswordReset(email: string): Promise<PasswordReset
 
 /** Exchange a reset token for a new password, then sign in with it. */
 export async function resetPassword(token: string, newPassword: string): Promise<AuthSession> {
-  const res = await fetch(`${API_BASE}/api/v1/auth/reset-password`, {
+  const res = await fetch(`${API_V1}/auth/reset-password`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token, new_password: newPassword }),
