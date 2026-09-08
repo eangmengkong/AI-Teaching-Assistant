@@ -57,10 +57,11 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       # Must match an "Authorized redirect URI" in Google Cloud Console.
-      # If Render appends a suffix to your service URL, update this value
-      # AND the Google Cloud Console entry to match.
+      # This is the actual deployed Render URL (name suffixed because the
+      # plain name was taken). If you ever rename the service, update this
+      # value AND the Google Cloud Console entry to match.
       - key: GOOGLE_REDIRECT_URI
-        value: https://ai-teaching-backend.onrender.com/api/v1/calendar/oauth2callback
+        value: https://ai-teaching-backend-24fj.onrender.com/api/v1/calendar/oauth2callback
       - key: DAILY_DIGEST_ENABLED
         value: "true"
       - key: DAILY_DIGEST_HOUR
