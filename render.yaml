@@ -69,7 +69,7 @@ services:
       - key: GOOGLE_CALENDAR_SYNC_ENABLED
         value: "true"
       # Base URL of the dashboard — used to build password-reset links sent
-      # via Telegram. Set this to your Vercel URL, e.g.
-      # https://ai-teaching-assistant.vercel.app  (no trailing slash needed)
+      # via Telegram. Real domain: https://ai-teaching-assistant-eight.vercel.app
+      # (no trailing slash needed)
       - key: FRONTEND_URL
         sync: false
