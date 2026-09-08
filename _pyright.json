@@ -1,0 +1,1054 @@
+﻿{
+    "version": "1.1.413",
+    "time": "1788453547151",
+    "generalDiagnostics": [
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\agent\\central_agent.py",
+            "severity": "error",
+            "message": "Argument of type \"list[dict[str, Unknown]]\" cannot be assigned to parameter \"functions\" of type \"Iterable[Function] | Omit\" in function \"create\"\n┬á┬áType \"list[dict[str, Unknown]]\" is not assignable to type \"Iterable[Function] | Omit\"\n┬á┬á┬á┬á\"list[dict[str, Unknown]]\" is not assignable to \"Iterable[Function]\"\n┬á┬á┬á┬á┬á┬áType parameter \"_T_co@Iterable\" is covariant, but \"dict[str, Unknown]\" is not a subtype of \"Function\"\n┬á┬á┬á┬á┬á┬á┬á┬á\"dict[str, Unknown]\" is not assignable to \"Function\"\n┬á┬á┬á┬á\"list[dict[str, Unknown]]\" is not assignable to \"Omit\"",
+            "range": {
+                "start": {
+                    "line": 238,
+                    "character": 30
+                },
+                "end": {
+                    "line": 238,
+                    "character": 46
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\agent\\tools.py",
+            "severity": "error",
+            "message": "No overloads for \"join\" match the provided arguments",
+            "range": {
+                "start": {
+                    "line": 167,
+                    "character": 85
+                },
+                "end": {
+                    "line": 167,
+                    "character": 119
+                }
+            },
+            "rule": "reportCallIssue"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\agent\\tools.py",
+            "severity": "error",
+            "message": "Argument of type \"Column[Any] | list[str]\" cannot be assigned to parameter \"iterable\" of type \"Iterable[str]\" in function \"join\"\n┬á┬áType \"Column[Any] | list[str]\" is not assignable to type \"Iterable[str]\"\n┬á┬á┬á┬á\"Column[Any]\" is incompatible with protocol \"Iterable[str]\"\n┬á┬á┬á┬á┬á┬á\"__iter__\" is not present",
+            "range": {
+                "start": {
+                    "line": 167,
+                    "character": 95
+                },
+                "end": {
+                    "line": 167,
+                    "character": 118
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\agent\\tools.py",
+            "severity": "error",
+            "message": "Cannot assign to attribute \"status\" for class \"LessonSchedule\"\n┬á┬áExpression of type \"str\" cannot be assigned to attribute \"status\" of class \"LessonSchedule\"\n┬á┬á┬á┬á\"str\" is not assignable to \"Column[str]\"",
+            "range": {
+                "start": {
+                    "line": 394,
+                    "character": 17
+                },
+                "end": {
+                    "line": 394,
+                    "character": 23
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\agent\\tools.py",
+            "severity": "error",
+            "message": "Cannot assign to attribute \"date\" for class \"LessonSchedule\"\n┬á┬áExpression of type \"date\" cannot be assigned to attribute \"date\" of class \"LessonSchedule\"\n┬á┬á┬á┬á\"date\" is not assignable to \"Column[date]\"",
+            "range": {
+                "start": {
+                    "line": 510,
+                    "character": 17
+                },
+                "end": {
+                    "line": 510,
+                    "character": 21
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\agent\\tools.py",
+            "severity": "error",
+            "message": "Cannot assign to attribute \"status\" for class \"LessonSchedule\"\n┬á┬áExpression of type \"Literal['rescheduled']\" cannot be assigned to attribute \"status\" of class \"LessonSchedule\"\n┬á┬á┬á┬á\"Literal['rescheduled']\" is not assignable to \"Column[str]\"",
+            "range": {
+                "start": {
+                    "line": 511,
+                    "character": 17
+                },
+                "end": {
+                    "line": 511,
+                    "character": 23
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\agent\\tools.py",
+            "severity": "error",
+            "message": "\"User\" is not defined",
+            "range": {
+                "start": {
+                    "line": 520,
+                    "character": 31
+                },
+                "end": {
+                    "line": 520,
+                    "character": 35
+                }
+            },
+            "rule": "reportUndefinedVariable"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\agent\\tools.py",
+            "severity": "error",
+            "message": "\"User\" is not defined",
+            "range": {
+                "start": {
+                    "line": 520,
+                    "character": 43
+                },
+                "end": {
+                    "line": 520,
+                    "character": 47
+                }
+            },
+            "rule": "reportUndefinedVariable"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\agent\\tools.py",
+            "severity": "error",
+            "message": "\"User\" is not defined",
+            "range": {
+                "start": {
+                    "line": 554,
+                    "character": 24
+                },
+                "end": {
+                    "line": 554,
+                    "character": 28
+                }
+            },
+            "rule": "reportUndefinedVariable"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\agent\\tools.py",
+            "severity": "error",
+            "message": "\"User\" is not defined",
+            "range": {
+                "start": {
+                    "line": 554,
+                    "character": 36
+                },
+                "end": {
+                    "line": 554,
+                    "character": 40
+                }
+            },
+            "rule": "reportUndefinedVariable"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\agent\\tools.py",
+            "severity": "error",
+            "message": "Argument of type \"Unknown | None\" cannot be assigned to parameter \"user\" of type \"User\" in function \"create_calendar_event\"\n┬á┬áType \"Unknown | None\" is not assignable to type \"User\"\n┬á┬á┬á┬á\"None\" is not assignable to \"User\"",
+            "range": {
+                "start": {
+                    "line": 557,
+                    "character": 75
+                },
+                "end": {
+                    "line": 557,
+                    "character": 79
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\api\\v1\\auth.py",
+            "severity": "error",
+            "message": "Type \"Any | None\" is not assignable to declared type \"str\"\n┬á┬áType \"Any | None\" is not assignable to type \"str\"\n┬á┬á┬á┬á\"None\" is not assignable to \"str\"",
+            "range": {
+                "start": {
+                    "line": 20,
+                    "character": 27
+                },
+                "end": {
+                    "line": 20,
+                    "character": 45
+                }
+            },
+            "rule": "reportAssignmentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\api\\v1\\auth.py",
+            "severity": "error",
+            "message": "Argument of type \"Column[str]\" cannot be assigned to parameter \"hashed_password\" of type \"str\" in function \"verify_password\"\n┬á┬á\"Column[str]\" is not assignable to \"str\"",
+            "range": {
+                "start": {
+                    "line": 69,
+                    "character": 59
+                },
+                "end": {
+                    "line": 69,
+                    "character": 79
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\api\\v1\\documents.py",
+            "severity": "error",
+            "message": "Argument of type \"str | None\" cannot be assigned to parameter \"document_type\" of type \"str\" in function \"search_documents\"\n┬á┬áType \"str | None\" is not assignable to type \"str\"\n┬á┬á┬á┬á\"None\" is not assignable to \"str\"",
+            "range": {
+                "start": {
+                    "line": 89,
+                    "character": 74
+                },
+                "end": {
+                    "line": 89,
+                    "character": 87
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\api\\v1\\lessons.py",
+            "severity": "error",
+            "message": "Expression of type \"None\" cannot be assigned to parameter of type \"int\"\n┬á┬á\"None\" is not assignable to \"int\"",
+            "range": {
+                "start": {
+                    "line": 38,
+                    "character": 21
+                },
+                "end": {
+                    "line": 38,
+                    "character": 25
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\api\\v1\\lessons.py",
+            "severity": "error",
+            "message": "Expression of type \"None\" cannot be assigned to parameter of type \"int\"\n┬á┬á\"None\" is not assignable to \"int\"",
+            "range": {
+                "start": {
+                    "line": 57,
+                    "character": 21
+                },
+                "end": {
+                    "line": 57,
+                    "character": 25
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\api\\v1\\lessons.py",
+            "severity": "error",
+            "message": "Expression of type \"None\" cannot be assigned to parameter of type \"int\"\n┬á┬á\"None\" is not assignable to \"int\"",
+            "range": {
+                "start": {
+                    "line": 66,
+                    "character": 21
+                },
+                "end": {
+                    "line": 66,
+                    "character": 25
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\api\\v1\\schedule.py",
+            "severity": "error",
+            "message": "Argument of type \"Column[int]\" cannot be assigned to parameter \"course_id\" of type \"int\" in function \"reschedule_lesson\"\n┬á┬á\"Column[int]\" is not assignable to \"int\"",
+            "range": {
+                "start": {
+                    "line": 106,
+                    "character": 56
+                },
+                "end": {
+                    "line": 106,
+                    "character": 74
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\api\\v1\\schedule.py",
+            "severity": "error",
+            "message": "Argument of type \"Column[int]\" cannot be assigned to parameter \"course_id\" of type \"int\" in function \"skip_lesson\"\n┬á┬á\"Column[int]\" is not assignable to \"int\"",
+            "range": {
+                "start": {
+                    "line": 122,
+                    "character": 50
+                },
+                "end": {
+                    "line": 122,
+                    "character": 68
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\core\\security.py",
+            "severity": "error",
+            "message": "Expression of type \"None\" cannot be assigned to parameter of type \"timedelta\"\n┬á┬á\"None\" is not assignable to \"timedelta\"",
+            "range": {
+                "start": {
+                    "line": 9,
+                    "character": 77
+                },
+                "end": {
+                    "line": 9,
+                    "character": 81
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\calendar_service.py",
+            "severity": "error",
+            "message": "No overloads for \"join\" match the provided arguments",
+            "range": {
+                "start": {
+                    "line": 39,
+                    "character": 41
+                },
+                "end": {
+                    "line": 39,
+                    "character": 71
+                }
+            },
+            "rule": "reportCallIssue"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\calendar_service.py",
+            "severity": "error",
+            "message": "Argument of type \"Column[Any]\" cannot be assigned to parameter \"iterable\" of type \"Iterable[str]\" in function \"join\"\n┬á┬á\"Column[Any]\" is incompatible with protocol \"Iterable[str]\"\n┬á┬á┬á┬á\"__iter__\" is not present",
+            "range": {
+                "start": {
+                    "line": 39,
+                    "character": 51
+                },
+                "end": {
+                    "line": 39,
+                    "character": 70
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\calendar_service.py",
+            "severity": "error",
+            "message": "Invalid conditional operand of type \"Column[Any]\"\n┬á┬áMethod __bool__ for type \"Column[Any]\" returns type \"NoReturn\" rather than \"bool\"",
+            "range": {
+                "start": {
+                    "line": 39,
+                    "character": 75
+                },
+                "end": {
+                    "line": 39,
+                    "character": 94
+                }
+            },
+            "rule": "reportGeneralTypeIssues"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\calendar_service.py",
+            "severity": "error",
+            "message": "No overloads for \"join\" match the provided arguments",
+            "range": {
+                "start": {
+                    "line": 40,
+                    "character": 30
+                },
+                "end": {
+                    "line": 40,
+                    "character": 59
+                }
+            },
+            "rule": "reportCallIssue"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\calendar_service.py",
+            "severity": "error",
+            "message": "Argument of type \"Column[Any]\" cannot be assigned to parameter \"iterable\" of type \"Iterable[str]\" in function \"join\"\n┬á┬á\"Column[Any]\" is incompatible with protocol \"Iterable[str]\"\n┬á┬á┬á┬á\"__iter__\" is not present",
+            "range": {
+                "start": {
+                    "line": 40,
+                    "character": 40
+                },
+                "end": {
+                    "line": 40,
+                    "character": 58
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\calendar_service.py",
+            "severity": "error",
+            "message": "Invalid conditional operand of type \"Column[Any]\"\n┬á┬áMethod __bool__ for type \"Column[Any]\" returns type \"NoReturn\" rather than \"bool\"",
+            "range": {
+                "start": {
+                    "line": 40,
+                    "character": 63
+                },
+                "end": {
+                    "line": 40,
+                    "character": 81
+                }
+            },
+            "rule": "reportGeneralTypeIssues"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\calendar_service.py",
+            "severity": "error",
+            "message": "Invalid conditional operand of type \"Column[str]\"\n┬á┬áMethod __bool__ for type \"Column[str]\" returns type \"NoReturn\" rather than \"bool\"",
+            "range": {
+                "start": {
+                    "line": 49,
+                    "character": 11
+                },
+                "end": {
+                    "line": 49,
+                    "character": 37
+                }
+            },
+            "rule": "reportGeneralTypeIssues"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\calendar_service.py",
+            "severity": "error",
+            "message": "Invalid conditional operand of type \"Column[str] | ((serviceName: Unknown, version: Unknown, http: Unknown | None = None, discoveryServiceUrl: Unknown | None = None, developerKey: Unknown | None = None, model: Unknown | None = None, requestBuilder: type[HttpRequest] = HttpRequest, credentials: Unknown | None = None, cache_discovery: bool = True, cache: Unknown | None = None, client_options: Unknown | None = None, adc_cert_path: Unknown | None = None, adc_key_path: Unknown | None = None, num_retries: int = 1, static_discovery: Unknown | None = None, always_use_jwt_access: bool = False) -> Unknown) | None\"\n┬á┬áMethod __bool__ for type \"Column[str]\" returns type \"NoReturn\" rather than \"bool\"",
+            "range": {
+                "start": {
+                    "line": 55,
+                    "character": 11
+                },
+                "end": {
+                    "line": 55,
+                    "character": 62
+                }
+            },
+            "rule": "reportGeneralTypeIssues"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\calendar_service.py",
+            "severity": "error",
+            "message": "Cannot assign to attribute \"calendar_event_id\" for class \"LessonSchedule\"\n┬á┬áExpression of type \"Unknown | str\" cannot be assigned to attribute \"calendar_event_id\" of class \"LessonSchedule\"\n┬á┬á┬á┬áType \"Unknown | str\" is not assignable to type \"Column[str]\"\n┬á┬á┬á┬á┬á┬á\"str\" is not assignable to \"Column[str]\"",
+            "range": {
+                "start": {
+                    "line": 85,
+                    "character": 17
+                },
+                "end": {
+                    "line": 85,
+                    "character": 34
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\calendar_service.py",
+            "severity": "error",
+            "message": "Invalid conditional operand of type \"Column[str]\"\n┬á┬áMethod __bool__ for type \"Column[str]\" returns type \"NoReturn\" rather than \"bool\"",
+            "range": {
+                "start": {
+                    "line": 108,
+                    "character": 15
+                },
+                "end": {
+                    "line": 108,
+                    "character": 41
+                }
+            },
+            "rule": "reportGeneralTypeIssues"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\calendar_service.py",
+            "severity": "error",
+            "message": "Type \"str | None\" is not assignable to return type \"str\"\n┬á┬áType \"str | None\" is not assignable to type \"str\"\n┬á┬á┬á┬á\"None\" is not assignable to \"str\"",
+            "range": {
+                "start": {
+                    "line": 109,
+                    "character": 19
+                },
+                "end": {
+                    "line": 109,
+                    "character": 90
+                }
+            },
+            "rule": "reportReturnType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\calendar_service.py",
+            "severity": "error",
+            "message": "Invalid conditional operand of type \"Column[str] | ((serviceName: Unknown, version: Unknown, http: Unknown | None = None, discoveryServiceUrl: Unknown | None = None, developerKey: Unknown | None = None, model: Unknown | None = None, requestBuilder: type[HttpRequest] = HttpRequest, credentials: Unknown | None = None, cache_discovery: bool = True, cache: Unknown | None = None, client_options: Unknown | None = None, adc_cert_path: Unknown | None = None, adc_key_path: Unknown | None = None, num_retries: int = 1, static_discovery: Unknown | None = None, always_use_jwt_access: bool = False) -> Unknown) | None\"\n┬á┬áMethod __bool__ for type \"Column[str]\" returns type \"NoReturn\" rather than \"bool\"",
+            "range": {
+                "start": {
+                    "line": 114,
+                    "character": 11
+                },
+                "end": {
+                    "line": 114,
+                    "character": 62
+                }
+            },
+            "rule": "reportGeneralTypeIssues"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\calendar_service.py",
+            "severity": "error",
+            "message": "Type \"Column[str]\" is not assignable to return type \"str\"\n┬á┬á\"Column[str]\" is not assignable to \"str\"",
+            "range": {
+                "start": {
+                    "line": 152,
+                    "character": 15
+                },
+                "end": {
+                    "line": 152,
+                    "character": 41
+                }
+            },
+            "rule": "reportReturnType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\document_service.py",
+            "severity": "error",
+            "message": "Argument of type \"Column[int]\" cannot be assigned to parameter \"doc_id\" of type \"int\" in function \"_parse_page_chunks\"\n┬á┬á\"Column[int]\" is not assignable to \"int\"",
+            "range": {
+                "start": {
+                    "line": 56,
+                    "character": 56
+                },
+                "end": {
+                    "line": 56,
+                    "character": 62
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\document_service.py",
+            "severity": "error",
+            "message": "Argument of type \"Column[int]\" cannot be assigned to parameter \"doc_id\" of type \"int\" in function \"_parse_workbook_exercises\"\n┬á┬á\"Column[int]\" is not assignable to \"int\"",
+            "range": {
+                "start": {
+                    "line": 62,
+                    "character": 81
+                },
+                "end": {
+                    "line": 62,
+                    "character": 87
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\document_service.py",
+            "severity": "error",
+            "message": "Expression of type \"None\" cannot be assigned to parameter of type \"str\"\n┬á┬á\"None\" is not assignable to \"str\"",
+            "range": {
+                "start": {
+                    "line": 168,
+                    "character": 98
+                },
+                "end": {
+                    "line": 168,
+                    "character": 102
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\reminder_service.py",
+            "severity": "error",
+            "message": "Argument of type \"Column[str]\" cannot be assigned to parameter \"chat_id\" of type \"str\" in function \"send_telegram_message\"\n┬á┬á\"Column[str]\" is not assignable to \"str\"",
+            "range": {
+                "start": {
+                    "line": 108,
+                    "character": 66
+                },
+                "end": {
+                    "line": 108,
+                    "character": 86
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\reminder_service.py",
+            "severity": "error",
+            "message": "Argument of type \"Column[str]\" cannot be assigned to parameter \"text\" of type \"str\" in function \"send_telegram_message\"\n┬á┬á\"Column[str]\" is not assignable to \"str\"",
+            "range": {
+                "start": {
+                    "line": 108,
+                    "character": 88
+                },
+                "end": {
+                    "line": 108,
+                    "character": 99
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\reminder_service.py",
+            "severity": "error",
+            "message": "Cannot assign to attribute \"status\" for class \"TelegramMessage\"\n┬á┬áExpression of type \"Literal['sent']\" cannot be assigned to attribute \"status\" of class \"TelegramMessage\"\n┬á┬á┬á┬á\"Literal['sent']\" is not assignable to \"Column[str]\"",
+            "range": {
+                "start": {
+                    "line": 110,
+                    "character": 20
+                },
+                "end": {
+                    "line": 110,
+                    "character": 26
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\reminder_service.py",
+            "severity": "error",
+            "message": "Cannot assign to attribute \"sent_at\" for class \"TelegramMessage\"\n┬á┬áExpression of type \"datetime\" cannot be assigned to attribute \"sent_at\" of class \"TelegramMessage\"\n┬á┬á┬á┬á\"datetime\" is not assignable to \"Column[datetime]\"",
+            "range": {
+                "start": {
+                    "line": 111,
+                    "character": 20
+                },
+                "end": {
+                    "line": 111,
+                    "character": 27
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\reminder_service.py",
+            "severity": "error",
+            "message": "Cannot assign to attribute \"error\" for class \"TelegramMessage\"\n┬á┬áExpression of type \"None\" cannot be assigned to attribute \"error\" of class \"TelegramMessage\"\n┬á┬á┬á┬á\"None\" is not assignable to \"Column[str]\"",
+            "range": {
+                "start": {
+                    "line": 112,
+                    "character": 20
+                },
+                "end": {
+                    "line": 112,
+                    "character": 25
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\reminder_service.py",
+            "severity": "error",
+            "message": "Cannot assign to attribute \"retry_count\" for class \"TelegramMessage\"\n┬á┬áExpression of type \"ColumnElement[int]\" cannot be assigned to attribute \"retry_count\" of class \"TelegramMessage\"\n┬á┬á┬á┬á\"ColumnElement[int]\" is not assignable to \"Column[int]\"",
+            "range": {
+                "start": {
+                    "line": 114,
+                    "character": 20
+                },
+                "end": {
+                    "line": 114,
+                    "character": 31
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\reminder_service.py",
+            "severity": "error",
+            "message": "Cannot assign to attribute \"status\" for class \"TelegramMessage\"\n┬á┬áExpression of type \"Literal['failed']\" cannot be assigned to attribute \"status\" of class \"TelegramMessage\"\n┬á┬á┬á┬á\"Literal['failed']\" is not assignable to \"Column[str]\"",
+            "range": {
+                "start": {
+                    "line": 115,
+                    "character": 20
+                },
+                "end": {
+                    "line": 115,
+                    "character": 26
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\reminder_service.py",
+            "severity": "error",
+            "message": "Cannot assign to attribute \"error\" for class \"TelegramMessage\"\n┬á┬áExpression of type \"Literal['Telegram API delivery error or token missing']\" cannot be assigned to attribute \"error\" of class \"TelegramMessage\"\n┬á┬á┬á┬á\"Literal['Telegram API delivery error or token missing']\" is not assignable to \"Column[str]\"",
+            "range": {
+                "start": {
+                    "line": 116,
+                    "character": 20
+                },
+                "end": {
+                    "line": 116,
+                    "character": 25
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\scheduler_service.py",
+            "severity": "error",
+            "message": "Argument of type \"Column[date]\" cannot be assigned to parameter \"start_date\" of type \"date\" in function \"_calculate_teaching_dates\"\n┬á┬á\"Column[date]\" is not assignable to \"date\"",
+            "range": {
+                "start": {
+                    "line": 44,
+                    "character": 23
+                },
+                "end": {
+                    "line": 44,
+                    "character": 40
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\scheduler_service.py",
+            "severity": "error",
+            "message": "Argument of type \"Column[date]\" cannot be assigned to parameter \"end_date\" of type \"date\" in function \"_calculate_teaching_dates\"\n┬á┬á\"Column[date]\" is not assignable to \"date\"",
+            "range": {
+                "start": {
+                    "line": 45,
+                    "character": 21
+                },
+                "end": {
+                    "line": 45,
+                    "character": 36
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\scheduler_service.py",
+            "severity": "error",
+            "message": "Argument of type \"Column[Any]\" cannot be assigned to parameter \"class_days\" of type \"List[str]\" in function \"_calculate_teaching_dates\"\n┬á┬á\"Column[Any]\" is not assignable to \"List[str]\"",
+            "range": {
+                "start": {
+                    "line": 46,
+                    "character": 23
+                },
+                "end": {
+                    "line": 46,
+                    "character": 40
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\scheduler_service.py",
+            "severity": "error",
+            "message": "Argument of type \"list[_Date | ColumnElement[Any] | Any]\" cannot be assigned to parameter \"holidays\" of type \"List[date]\" in function \"_calculate_teaching_dates\"",
+            "range": {
+                "start": {
+                    "line": 47,
+                    "character": 21
+                },
+                "end": {
+                    "line": 47,
+                    "character": 124
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\scheduler_service.py",
+            "severity": "error",
+            "message": "Argument of type \"list[_Date | ColumnElement[Any] | Any]\" cannot be assigned to parameter \"days_without_class\" of type \"List[date]\" in function \"_calculate_teaching_dates\"",
+            "range": {
+                "start": {
+                    "line": 48,
+                    "character": 31
+                },
+                "end": {
+                    "line": 48,
+                    "character": 144
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\scheduler_service.py",
+            "severity": "error",
+            "message": "Argument of type \"ColumnElement[_NUMERIC] | float\" cannot be assigned to parameter \"number\" of type \"_SupportsRound1[_T@round]\" in function \"round\"\n┬á┬áType \"ColumnElement[_NUMERIC] | float\" is not assignable to type \"_SupportsRound1[int]\"\n┬á┬á┬á┬á\"ColumnElement[_NUMERIC]\" is incompatible with protocol \"_SupportsRound1[int]\"\n┬á┬á┬á┬á┬á┬á\"__round__\" is not present",
+            "range": {
+                "start": {
+                    "line": 81,
+                    "character": 44
+                },
+                "end": {
+                    "line": 81,
+                    "character": 91
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\scheduler_service.py",
+            "severity": "error",
+            "message": "Argument of type \"ColumnElement[_NUMERIC] | float\" cannot be assigned to parameter \"number\" of type \"_SupportsRound1[_T@round]\" in function \"round\"\n┬á┬áType \"ColumnElement[_NUMERIC] | float\" is not assignable to type \"_SupportsRound1[int]\"\n┬á┬á┬á┬á\"ColumnElement[_NUMERIC]\" is incompatible with protocol \"_SupportsRound1[int]\"\n┬á┬á┬á┬á┬á┬á\"__round__\" is not present",
+            "range": {
+                "start": {
+                    "line": 82,
+                    "character": 44
+                },
+                "end": {
+                    "line": 82,
+                    "character": 91
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\scheduler_service.py",
+            "severity": "error",
+            "message": "Cannot assign to attribute \"status\" for class \"LessonSchedule\"\n┬á┬áExpression of type \"Literal['skipped']\" cannot be assigned to attribute \"status\" of class \"LessonSchedule\"\n┬á┬á┬á┬á\"Literal['skipped']\" is not assignable to \"Column[str]\"",
+            "range": {
+                "start": {
+                    "line": 213,
+                    "character": 16
+                },
+                "end": {
+                    "line": 213,
+                    "character": 22
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\scheduler_service.py",
+            "severity": "error",
+            "message": "Cannot assign to attribute \"objectives\" for class \"LessonSchedule\"\n┬á┬áExpression of type \"str\" cannot be assigned to attribute \"objectives\" of class \"LessonSchedule\"\n┬á┬á┬á┬á\"str\" is not assignable to \"Column[str]\"",
+            "range": {
+                "start": {
+                    "line": 241,
+                    "character": 20
+                },
+                "end": {
+                    "line": 241,
+                    "character": 30
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\scheduler_service.py",
+            "severity": "error",
+            "message": "Cannot assign to attribute \"textbook_pages\" for class \"LessonSchedule\"\n┬á┬áExpression of type \"str\" cannot be assigned to attribute \"textbook_pages\" of class \"LessonSchedule\"\n┬á┬á┬á┬á\"str\" is not assignable to \"Column[str]\"",
+            "range": {
+                "start": {
+                    "line": 242,
+                    "character": 20
+                },
+                "end": {
+                    "line": 242,
+                    "character": 34
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\scheduler_service.py",
+            "severity": "error",
+            "message": "Cannot assign to attribute \"workbook_pages\" for class \"LessonSchedule\"\n┬á┬áExpression of type \"str\" cannot be assigned to attribute \"workbook_pages\" of class \"LessonSchedule\"\n┬á┬á┬á┬á\"str\" is not assignable to \"Column[str]\"",
+            "range": {
+                "start": {
+                    "line": 243,
+                    "character": 20
+                },
+                "end": {
+                    "line": 243,
+                    "character": 34
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\services\\scheduler_service.py",
+            "severity": "error",
+            "message": "Cannot assign to attribute \"notes\" for class \"LessonSchedule\"\n┬á┬áExpression of type \"str\" cannot be assigned to attribute \"notes\" of class \"LessonSchedule\"\n┬á┬á┬á┬á\"str\" is not assignable to \"Column[str]\"",
+            "range": {
+                "start": {
+                    "line": 244,
+                    "character": 20
+                },
+                "end": {
+                    "line": 244,
+                    "character": 25
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\telegram\\bot.py",
+            "severity": "error",
+            "message": "Cannot assign to attribute \"telegram_chat_id\" for class \"User\"\n┬á┬áExpression of type \"str\" cannot be assigned to attribute \"telegram_chat_id\" of class \"User\"\n┬á┬á┬á┬á\"str\" is not assignable to \"Column[str]\"",
+            "range": {
+                "start": {
+                    "line": 58,
+                    "character": 29
+                },
+                "end": {
+                    "line": 58,
+                    "character": 45
+                }
+            },
+            "rule": "reportAttributeAccessIssue"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\telegram\\bot.py",
+            "severity": "error",
+            "message": "Argument of type \"Column[int] | Literal[1]\" cannot be assigned to parameter \"course_id\" of type \"int\" in function \"get_today_lesson\"\n┬á┬áType \"Column[int] | Literal[1]\" is not assignable to type \"int\"\n┬á┬á┬á┬á\"Column[int]\" is not assignable to \"int\"",
+            "range": {
+                "start": {
+                    "line": 94,
+                    "character": 73
+                },
+                "end": {
+                    "line": 94,
+                    "character": 82
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\telegram\\bot.py",
+            "severity": "error",
+            "message": "Argument of type \"Column[int] | Literal[1]\" cannot be assigned to parameter \"course_id\" of type \"int\" in function \"record_lesson_completion\"\n┬á┬áType \"Column[int] | Literal[1]\" is not assignable to type \"int\"\n┬á┬á┬á┬á\"Column[int]\" is not assignable to \"int\"",
+            "range": {
+                "start": {
+                    "line": 97,
+                    "character": 84
+                },
+                "end": {
+                    "line": 97,
+                    "character": 93
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\telegram\\bot.py",
+            "severity": "error",
+            "message": "Argument of type \"Column[int] | Literal[1]\" cannot be assigned to parameter \"course_id\" of type \"int\" in function \"get_today_lesson\"\n┬á┬áType \"Column[int] | Literal[1]\" is not assignable to type \"int\"\n┬á┬á┬á┬á\"Column[int]\" is not assignable to \"int\"",
+            "range": {
+                "start": {
+                    "line": 117,
+                    "character": 77
+                },
+                "end": {
+                    "line": 117,
+                    "character": 86
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\telegram\\bot.py",
+            "severity": "error",
+            "message": "Argument of type \"Column[int] | Literal[1]\" cannot be assigned to parameter \"course_id\" of type \"int\" in function \"reschedule_lesson\"\n┬á┬áType \"Column[int] | Literal[1]\" is not assignable to type \"int\"\n┬á┬á┬á┬á\"Column[int]\" is not assignable to \"int\"",
+            "range": {
+                "start": {
+                    "line": 120,
+                    "character": 82
+                },
+                "end": {
+                    "line": 120,
+                    "character": 91
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\app\\telegram\\bot.py",
+            "severity": "error",
+            "message": "Argument of type \"Column[int] | Literal[1]\" cannot be assigned to parameter \"course_id\" of type \"int\" in function \"process_user_request\"\n┬á┬áType \"Column[int] | Literal[1]\" is not assignable to type \"int\"\n┬á┬á┬á┬á\"Column[int]\" is not assignable to \"int\"",
+            "range": {
+                "start": {
+                    "line": 129,
+                    "character": 83
+                },
+                "end": {
+                    "line": 129,
+                    "character": 92
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\scripts\\migrate_sqlite_to_neon.py",
+            "severity": "error",
+            "message": "Argument of type \"str | None\" cannot be assigned to parameter \"pg_type\" of type \"str\" in function \"convert_value\"\n┬á┬áType \"str | None\" is not assignable to type \"str\"\n┬á┬á┬á┬á\"None\" is not assignable to \"str\"",
+            "range": {
+                "start": {
+                    "line": 130,
+                    "character": 58
+                },
+                "end": {
+                    "line": 130,
+                    "character": 69
+                }
+            },
+            "rule": "reportArgumentType"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\scripts\\migrate_sqlite_to_neon.py",
+            "severity": "error",
+            "message": "Object of type \"None\" is not subscriptable",
+            "range": {
+                "start": {
+                    "line": 144,
+                    "character": 22
+                },
+                "end": {
+                    "line": 144,
+                    "character": 36
+                }
+            },
+            "rule": "reportOptionalSubscript"
+        },
+        {
+            "file": "d:\\AI generate\\ai-teaching-assistant\\backend\\scripts\\migrate_sqlite_to_neon.py",
+            "severity": "error",
+            "message": "Object of type \"None\" is not subscriptable",
+            "range": {
+                "start": {
+                    "line": 147,
+                    "character": 29
+                },
+                "end": {
+                    "line": 147,
+                    "character": 43
+                }
+            },
+            "rule": "reportOptionalSubscript"
+        }
+    ],
+    "summary": {
+        "filesAnalyzed": 25,
+        "errorCount": 65,
+        "warningCount": 0,
+        "informationCount": 0,
+        "timeInSec": 3.552
+    }
+}
+

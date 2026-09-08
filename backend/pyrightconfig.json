@@ -1,0 +1,9 @@
+{
+  "include": ["app", "scripts"],
+  "exclude": ["venv", "**/__pycache__", "ai_teaching_assistant.db"],
+  "venvPath": ".",
+  "venv": "venv",
+  "extraPaths": ["."],
+  "pythonVersion": "3.11",
+  "typeCheckingMode": "basic"
+}

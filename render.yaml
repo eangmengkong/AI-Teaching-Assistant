@@ -1,0 +1,47 @@
+# Render Blueprint - always-on backend (24/7 Telegram reminders + Google Calendar sync)
+#
+# Deploy: push this repo to GitHub, then in Render dashboard: "New +" -> "Blueprint"
+# and select the repo. Fill in the `sync: false` env vars afterwards.
+#
+# IMPORTANT: use an ALWAYS-ON plan (Starter or higher). Free tiers sleep after
+# inactivity and your reminders/digests will be missed while asleep.
+
+services:
+  - type: web
+    name: ai-teaching-backend
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /
+    autoDeploy: true
+    # Run exactly ONE instance: the Telegram bot uses long-polling, and a
+    # second replica would compete for updates and double-send messages.
+    numInstances: 1
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # your Neon/Postgres asyncpg URL
+      - key: SYNC_DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_BASE_URL
+        sync: false
+      - key: OPENAI_MODEL
+        value: gemini-3.6-flash
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false          # https://<your-backend-domain>/api/v1/calendar/oauth2callback
+      - key: DAILY_DIGEST_ENABLED
+        value: "true"
+      - key: DAILY_DIGEST_HOUR
+        value: "7"
+      - key: GOOGLE_CALENDAR_SYNC_ENABLED
+        value: "true"

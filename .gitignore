@@ -1,0 +1,47 @@
+# ---------- Secrets (NEVER commit) ----------
+.env
+.env.*
+*.pem
+*.key
+secrets.json
+
+# Keep the template, ignore real env files
+!.env.example
+
+# ---------- Python / backend ----------
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+env/
+backend/venv/
+backend/uploads/
+*.sqlite3
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---------- Node / frontend ----------
+node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+next-env.d.ts
+*.tsbuildinfo
+.eslintcache
+npm-debug.log*
+yarn-error.log*
+
+# ---------- Logs & smoke-test artifacts ----------
+*.log
+frontend-smoke*.txt
+css-check.txt
+
+# ---------- OS / editor junk ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+.vscode/
+.idea/

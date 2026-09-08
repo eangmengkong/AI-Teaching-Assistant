@@ -1,0 +1,211 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------ */
+/* Semantic theme tokens (consumed by Tailwind's `app.*` color scale)  */
+/* Light is the default palette; `.dark` overrides it.                 */
+/* ------------------------------------------------------------------ */
+:root {
+  --app-bg: 248 250 252; /* slate-50       */
+  --app-surface: 255 255 255; /* white          */
+  --app-surface-2: 241 245 249; /* slate-100      */
+  --app-hover: 226 232 240; /* slate-200      */
+  --app-input: 255 255 255; /* white          */
+  --app-border: 226 232 240; /* slate-200      */
+  --app-border-strong: 203 213 225; /* slate-300      */
+  --app-text: 15 23 42; /* slate-900      */
+  --app-text-soft: 30 41 59; /* slate-800      */
+  --app-text-subtle: 51 65 85; /* slate-700      */
+  --app-text-muted: 100 116 139; /* slate-500      */
+  --app-text-faint: 148 163 184; /* slate-400      */
+  --app-accent: 79 70 229; /* indigo-600     */
+  --app-accent-strong: 99 102 241; /* indigo-500     */
+  --app-brand-2: 139 92 246; /* violet-500     */
+  --app-brand-3: 217 70 239; /* fuchsia-500    */
+  --app-success: 5 150 105; /* emerald-600    */
+}
+
+.dark {
+  --app-bg: 15 23 42; /* slate-900  */
+  --app-surface: 2 6 23; /* slate-950  */
+  --app-surface-2: 15 23 42; /* slate-900  */
+  --app-hover: 30 41 59; /* slate-800  */
+  --app-input: 15 23 42; /* slate-900  */
+  --app-border: 30 41 59; /* slate-800  */
+  --app-border-strong: 51 65 85; /* slate-700  */
+  --app-text: 241 245 249; /* slate-100  */
+  --app-text-soft: 226 232 240; /* slate-200  */
+  --app-text-subtle: 203 213 225; /* slate-300  */
+  --app-text-muted: 148 163 184; /* slate-400  */
+  --app-text-faint: 100 116 139; /* slate-500  */
+  --app-accent: 129 140 248; /* indigo-400 */
+  --app-accent-strong: 129 140 248; /* indigo-400 */
+  --app-brand-2: 167 139 250; /* violet-400 */
+  --app-brand-3: 232 121 249; /* fuchsia-400 */
+  --app-success: 52 211 153; /* emerald-400 */
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: rgb(var(--app-bg));
+  color: rgb(var(--app-text));
+}
+
+::selection {
+  background-color: rgba(99, 102, 241, 0.35);
+  color: inherit;
+}
+
+/* Subtle scrollbars (WebKit + Firefox) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--app-text-faint)) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgb(var(--app-text-faint));
+  border: 2px solid rgb(var(--app-bg));
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--app-text-muted));
+}
+
+/* ------------------------------------------------------------------ */
+/* Motion                                                              */
+/* ------------------------------------------------------------------ */
+
+/* Toast entrance animation */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.toast-in {
+  animation: toast-in 0.2s ease-out;
+}
+
+/* Gentle entrance for page sections */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-up {
+  animation: fade-up 0.4s ease-out both;
+}
+
+/* Soft float used by the login hero ornament */
+@keyframes float-soft {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.04);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-float {
+  animation: float-soft 7s ease-in-out infinite;
+}
+
+/* Shimmer sweep for loading skeletons */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 0% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.skeleton-shimmer {
+  background-image: linear-gradient(
+    100deg,
+    rgb(var(--app-hover)) 40%,
+    rgb(var(--app-border-strong)) 50%,
+    rgb(var(--app-hover)) 60%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s linear infinite;
+}
+
+/* Breathing pulse for status dots */
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+.animate-pulse-soft {
+  animation: pulse-soft 2.2s ease-in-out infinite;
+}
+
+/* Slow gradient shift for brand hero panels */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 14s ease-in-out infinite alternate;
+}
+
+/* ------------------------------------------------------------------ */
+/* Reusable surface utilities                                          */
+/* ------------------------------------------------------------------ */
+
+/* Faint blueprint grid used behind hero / brand panels */
+.bg-grid {
+  background-image: linear-gradient(rgba(99, 102, 241, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.09) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Brand text gradient used on key headings */
+.text-brand-gradient {
+  background-image: linear-gradient(
+    120deg,
+    rgb(var(--app-accent-strong)),
+    rgb(var(--app-brand-2)),
+    rgb(var(--app-brand-3))
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Frosted panel used on top of hero backgrounds */
+.card-glass {
+  position: relative;
+  backdrop-filter: blur(10px);
+}
