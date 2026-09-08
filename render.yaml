@@ -18,11 +18,17 @@ services:
     # Run exactly ONE instance: the Telegram bot uses long-polling, and a
     # second replica would compete for updates and double-send messages.
     numInstances: 1
+    # Persistent storage for uploaded course PDFs (textbook/workbook pages).
+    # Without a disk, uploads are wiped on every deploy (ephemeral filesystem).
+    disk:
+      name: uploads
+      mountPath: /data/uploads
+      sizeGB: 1
     envVars:
       - key: DATABASE_URL
-        sync: false          # your Neon/Postgres asyncpg URL
+        sync: false          # your Neon/Postgres asyncpg URL (sslmode required)
       - key: SYNC_DATABASE_URL
-        sync: false
+        sync: false          # same host, plain postgres:// (only used by migration script)
       - key: SECRET_KEY
         generateValue: true
       - key: OPENAI_API_KEY
@@ -31,14 +37,32 @@ services:
         sync: false
       - key: OPENAI_MODEL
         value: gemini-3.6-flash
+      # AI fallback chain (optional but recommended - fills in when primary is rate-limited)
+      - key: AI_FALLBACK_1_BASE_URL
+        sync: false
+      - key: AI_FALLBACK_1_API_KEY
+        sync: false
+      - key: AI_FALLBACK_1_MODEL
+        sync: false
+      - key: AI_FALLBACK_2_BASE_URL
+        sync: false
+      - key: AI_FALLBACK_2_API_KEY
+        sync: false
+      - key: AI_FALLBACK_2_MODEL
+        sync: false
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
+      # Must match an "Authorized redirect URI" in Google Cloud Console.
+      # If Render appends a suffix to your service URL, update this value
+      # AND the Google Cloud Console entry to match.
       - key: GOOGLE_REDIRECT_URI
-        sync: false          # https://<your-backend-domain>/api/v1/calendar/oauth2callback
+        value: https://ai-teaching-backend.onrender.com/api/v1/calendar/oauth2callback
+      - key: UPLOAD_DIR
+        value: /data/uploads
       - key: DAILY_DIGEST_ENABLED
         value: "true"
       - key: DAILY_DIGEST_HOUR
