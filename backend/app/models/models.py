@@ -352,3 +352,16 @@ class Settings(Base):
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=True)
     key = Column(String(100), nullable=False)
     value = Column(Text, nullable=False)
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    # Only the SHA-256 hash of the raw token is stored, so a database leak
+    # cannot be replayed to reset anyone's password.
+    token_hash = Column(String(64), nullable=False, unique=True, index=True)
+    expires_at = Column(DateTime, nullable=False)
+    used_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

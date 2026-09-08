@@ -1,4 +1,4 @@
-import { API_BASE, type AuthSession } from './api';
+import { API_BASE, api, type AuthSession } from './api';
 
 const TOKEN_KEY = 'ai_ta_token';
 
@@ -74,4 +74,46 @@ export async function register(input: {
 
 export function logout(): void {
   clearSession();
+}
+
+export interface PasswordResetResult {
+  message: string;
+  sent?: boolean;
+  detail?: string;
+}
+
+/** Ask the backend to send a password-reset link to the user's Telegram. */
+export async function requestPasswordReset(email: string): Promise<PasswordResetResult> {
+  const res = await fetch(`${API_BASE}/api/v1/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  const data = (await res.json().catch(() => null)) as PasswordResetResult | null;
+  if (!res.ok) throw new Error(data?.detail || 'Could not start the reset. Try again.');
+  return data ?? { message: 'Reset link sent.' };
+}
+
+/** Exchange a reset token for a new password, then sign in with it. */
+export async function resetPassword(token: string, newPassword: string): Promise<AuthSession> {
+  const res = await fetch(`${API_BASE}/api/v1/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, new_password: newPassword }),
+  });
+  const data = (await res.json().catch(() => null)) as Partial<AuthSession> & { detail?: string } | null;
+  if (!res.ok || !data?.access_token) {
+    throw new Error(data?.detail || 'Reset failed. The link may have expired — request a new one.');
+  }
+  const session = data as AuthSession;
+  saveSession(session);
+  return session;
+}
+
+/** Change the password of the logged-in user (requires current password). */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await api<{ message: string }>('/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
 }

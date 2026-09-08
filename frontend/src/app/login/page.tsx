@@ -1,6 +1,7 @@
 'use client';
 
 import { Bot, CalendarCheck, GraduationCap, Library, Sparkles, Zap } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
@@ -182,6 +183,17 @@ export default function LoginPage() {
               {busy ? 'Please wait…' : mode === 'login' ? 'Sign In' : 'Create Account'}
             </Button>
           </form>
+
+          {mode === 'login' && (
+            <p className="mt-4 text-center text-sm text-app-muted">
+              <Link
+                href="/forgot-password"
+                className="font-semibold text-indigo-600 transition hover:text-indigo-500 dark:text-indigo-400"
+              >
+                Forgot password?
+              </Link>
+            </p>
+          )}
 
           <p className="mt-6 text-center text-[11px] leading-relaxed text-app-faint">
             After running the SQLite → Neon migration, the demo account is

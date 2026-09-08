@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
     GOOGLE_REDIRECT_URI: str = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/v1/calendar/oauth2callback")
 
+    # Frontend base URL — used to build password-reset links sent via Telegram
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
     # Upload storage
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "./uploads")
 

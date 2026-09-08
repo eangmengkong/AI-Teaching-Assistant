@@ -12,6 +12,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Default dashboard URL used to build password-reset links sent via Telegram.
+# Override with the FRONTEND_URL env var in production (render.yaml asks for it).
+ENV FRONTEND_URL=https://ai-teaching-assistant.vercel.app
+
 EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

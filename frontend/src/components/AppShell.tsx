@@ -6,6 +6,7 @@ import {
   FileText,
   GraduationCap,
   LayoutDashboard,
+  Lock,
   LogOut,
   Menu,
   Settings,
@@ -41,6 +42,12 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { href: '/schedule', id: 'schedule', label: '1-Month Schedule', icon: CalendarDays },
       { href: '/progress', id: 'progress', label: 'Progress & Scores', icon: TrendingUp },
+    ],
+  },
+  {
+    title: 'Account',
+    items: [
+      { href: '/settings', id: 'settings', label: 'Account & Security', icon: Lock },
     ],
   },
 ];

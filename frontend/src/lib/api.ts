@@ -21,7 +21,7 @@ const TOKEN_KEY = 'ai_ta_token';
 export interface AuthSession {
   access_token: string;
   token_type: string;
-  user: { id: number; email: string; full_name?: string | null };
+  user: { id: number; email: string; full_name?: string | null; telegram_chat_id?: string | null };
 }
 
 function readSession(): AuthSession | null {
