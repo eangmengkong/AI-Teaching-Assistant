@@ -1,6 +1,6 @@
 import os
 from pydantic_settings import BaseSettings
-from typing import Optional
+from typing import Optional, List
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "AI Teaching Assistant"
@@ -49,6 +49,23 @@ class Settings(BaseSettings):
 
     # Upload storage
     MAX_UPLOAD_SIZE_MB: int = int(os.getenv("MAX_UPLOAD_SIZE_MB", "500"))
+    # Transient scratch directory used while processing an upload. The natural
+    # home for the file bytes is the database (Document.file_data), so keeping
+    # the disk copy here is fine even on Render's ephemeral file system.
+    UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "./uploads")
+
+    # Allowed browser origins for CORS (comma-separated in the CORS_ORIGINS env
+    # var). Origins must be explicit: the "*" wildcard cannot be combined with
+    # allow_credentials=True, so a fixed allow-list is the only spec-compliant
+    # way to keep both cross-origin requests AND Authorization headers working.
+    CORS_ORIGINS: List[str] = [
+        origin.strip()
+        for origin in os.getenv(
+            "CORS_ORIGINS",
+            "http://localhost:3000,https://ai-teaching-assistant-eight.vercel.app",
+        ).split(",")
+        if origin.strip()
+    ]
 
     class Config:
         case_sensitive = True

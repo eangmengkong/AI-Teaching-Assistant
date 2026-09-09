@@ -75,3 +75,8 @@ services:
         sync: false
       - key: MAX_UPLOAD_SIZE_MB
         value: "500"
+      # Scratch dir used while an upload is being processed (files themselves
+      # are persisted in the database via Document.file_data, so this only
+      # ever holds transient temp files).
+      - key: UPLOAD_DIR
+        value: /tmp/ai_teaching_uploads
