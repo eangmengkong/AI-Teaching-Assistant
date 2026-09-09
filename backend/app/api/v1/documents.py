@@ -1,4 +1,5 @@
 import os
+import tempfile
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, Response
 from typing import List, Optional
 # pyrefly: ignore [missing-import]
@@ -13,7 +14,7 @@ from app.models.models import User, Course, Document
 from app.schemas.schemas import DocumentResponse
 from app.services.document_service import DocumentService
 from app.services.study_material_service import StudyMaterialService
-from app.services.upload_codec import decompress_payload, InvalidCompressedUpload
+from app.services.upload_codec import StreamDecompressor, InvalidCompressedUpload
 
 router = APIRouter()
 
@@ -40,25 +41,45 @@ async def upload_document(
             detail=f"Unsupported file type '{file_ext}'. Allowed: {', '.join(sorted(ALLOWED_DOCUMENT_EXTENSIONS))}",
         )
 
-    # Read the body (decompressing when the dashboard pre-compressed it).
-    raw = b""
+    # Read the body STREAMING to a temp file. Buffering the whole upload in
+    # RAM (raw += chunk) OOM-kills the 512 MB free-tier instance on large
+    # files, which shows up in the browser as a CORS/connection failure.
+    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+    fd, tmp_path = tempfile.mkstemp(dir=settings.UPLOAD_DIR, suffix=".upload")
     written = 0
     try:
-        while chunk := await file.read(1024 * 1024):
-            written += len(chunk)
-            if written > MAX_UPLOAD_SIZE:
-                raise HTTPException(
-                    status_code=413,
-                    detail="File exceeds the 500 MB upload limit.",
-                )
-            raw += chunk
-    except HTTPException:
-        raise
+        decompressor = StreamDecompressor() if compressed else None
+        with os.fdopen(fd, "wb") as out:
+            while chunk := await file.read(1024 * 1024):
+                if decompressor is not None:
+                    chunk = decompressor.feed(chunk)
+                written += len(chunk)
+                if written > MAX_UPLOAD_SIZE:
+                    raise HTTPException(
+                        status_code=413,
+                        detail="File exceeds the 500 MB upload limit.",
+                    )
+                out.write(chunk)
+            if decompressor is not None:
+                tail = decompressor.finish()
+                written += len(tail)
+                if written > MAX_UPLOAD_SIZE:
+                    raise HTTPException(
+                        status_code=413,
+                        detail="File exceeds the 500 MB upload limit.",
+                    )
+                out.write(tail)
 
-    try:
-        file_bytes = decompress_payload(raw, bool(compressed))
+        # Single read for the DB insert (one copy in memory, not three).
+        with open(tmp_path, "rb") as stored:
+            file_bytes = stored.read()
     except InvalidCompressedUpload:
         raise HTTPException(status_code=400, detail="Invalid compressed upload data.")
+    finally:
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
     if len(file_bytes) > MAX_UPLOAD_SIZE:
         raise HTTPException(
             status_code=413,
