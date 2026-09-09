@@ -33,6 +33,30 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Wrap fetch so that network-level failures (DNS, TLS, connection reset or a
+ * browser extension killing the request) surface as a readable ApiError
+ * instead of a bare TypeError:"Failed to fetch". This keeps the UI able to
+ * show what went wrong — without this, an ad-blocker/security extension
+ * dropping a large upload would appear as a generic console error with no
+ * explanation in the page.
+ */
+async function fetchOrThrow(path: string, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(endpointUrl(path), init);
+  } catch (err) {
+    if (err instanceof Error && (err.name === 'AbortError' || err.message.includes('abort'))) {
+      throw new ApiError('Request timed out. If you were uploading, please try again on a stable connection.', 0);
+    }
+    // This is the network/extension failure path.
+    throw new ApiError(
+      'The request did not reach the server (network or browser-extension issue). ' +
+        'If it keeps happening, try a private window (extensions are disabled there) or disable ad/security extensions.',
+      0,
+    );
+  }
+}
+
 const TOKEN_KEY = 'ai_ta_token';
 
 export interface AuthSession {
@@ -70,7 +94,7 @@ export async function api<T = unknown>(path: string, init?: RequestInit): Promis
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30 * 60 * 1000);
 
-  const res = await fetch(endpointUrl(path), {
+  const res = await fetchOrThrow(path, {
     ...init,
     signal: controller.signal,
     headers: {
@@ -98,7 +122,7 @@ export async function api<T = unknown>(path: string, init?: RequestInit): Promis
  */
 export async function safeGet<T = unknown>(path: string): Promise<T | null> {
   try {
-    const res = await fetch(endpointUrl(path), { headers: authHeaders() });
+    const res = await fetchOrThrow(path, { headers: authHeaders() });
     return res.ok ? ((await res.json()) as T) : null;
   } catch {
     return null;
@@ -110,7 +134,7 @@ export async function safeGet<T = unknown>(path: string): Promise<T | null> {
  * Throws ApiError on failure; returns the decoded Blob on success.
  */
 export async function apiBlob(path: string, init?: RequestInit): Promise<Blob> {
-  const res = await fetch(endpointUrl(path), {
+  const res = await fetchOrThrow(path, {
     ...init,
     headers: {
       ...authHeaders(),
