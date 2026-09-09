@@ -73,7 +73,9 @@ async def upload_document(
         course_id=course_id,
         document_type=document_type.lower(),
         filename=filename,
-        file_path=None,
+        # The production column is NOT NULL even though the model allows null,
+        # so store an empty string (the bytes live in file_data).
+        file_path="",
         file_data=file_bytes,
         mime_type=file.content_type,
         file_size=len(file_bytes),
