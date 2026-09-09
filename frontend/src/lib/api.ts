@@ -1,10 +1,27 @@
 /**
  * Centralized API helpers.
  * Base URL can be overridden with NEXT_PUBLIC_API_URL (see .env.example).
+ * It may be given with or without the /api/v1 prefix — it is normalized here
+ * so every request targets exactly one /api/v1 in every environment.
  */
 
-export const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '') || 'http://localhost:8000';
+const API_ROOT =
+  (process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '') || 'http://localhost:8000').replace(
+    /\/api\/v1$/,
+    '',
+  );
+
+/** API root that always ends with /api/v1, e.g. https://host/api/v1 */
+export const API_BASE = `${API_ROOT}/api/v1`;
+
+/**
+ * Build a fetch URL from a path. Accepts both "/api/v1/lessons" (the
+ * convention used across the app) and "/lessons", and never duplicates the
+ * /api/v1 prefix regardless of how NEXT_PUBLIC_API_URL is configured.
+ */
+function endpointUrl(path: string): string {
+  return `${API_BASE}${path.replace(/^\/api\/v1(?=\/|$)/, '')}`;
+}
 
 export class ApiError extends Error {
   status: number;
@@ -50,7 +67,7 @@ export function authHeaders(): Record<string, string> {
  */
 export async function api<T = unknown>(path: string, init?: RequestInit): Promise<T> {
   const isFormData = init?.body instanceof FormData;
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(endpointUrl(path), {
     ...init,
     headers: {
       ...authHeaders(),
@@ -75,7 +92,7 @@ export async function api<T = unknown>(path: string, init?: RequestInit): Promis
  */
 export async function safeGet<T = unknown>(path: string): Promise<T | null> {
   try {
-    const res = await fetch(`${API_BASE}${path}`, { headers: authHeaders() });
+    const res = await fetch(endpointUrl(path), { headers: authHeaders() });
     return res.ok ? ((await res.json()) as T) : null;
   } catch {
     return null;
@@ -87,7 +104,7 @@ export async function safeGet<T = unknown>(path: string): Promise<T | null> {
  * Throws ApiError on failure; returns the decoded Blob on success.
  */
 export async function apiBlob(path: string, init?: RequestInit): Promise<Blob> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(endpointUrl(path), {
     ...init,
     headers: {
       ...authHeaders(),

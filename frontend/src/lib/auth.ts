@@ -5,7 +5,7 @@ import { API_BASE, api, type AuthSession } from './api';
  * already include that prefix (production sets it WITH the prefix, localhost
  * without), so normalize it once here instead of hardcoding it in every URL.
  */
-const API_V1 = /\/api\/v1$/.test(API_BASE) ? API_BASE : `${API_BASE}/api/v1`;
+const API_V1 = API_BASE; // API_BASE is already normalized to end with /api/v1
 
 const TOKEN_KEY = 'ai_ta_token';
 
