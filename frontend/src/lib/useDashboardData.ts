@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { api, apiBlob, apiUploadJson, compressFileIfSupported, openBlobInNewTab, safeGet } from './api';
+import { api, apiBlob, apiUploadFileChunked, apiUploadJson, CHUNKED_UPLOAD_THRESHOLD, compressFileIfSupported, openBlobInNewTab, safeGet } from './api';
 import { useToast } from './useToast';
 import type { ToastData, ToastType } from './useToast';
 import type {
@@ -210,30 +210,44 @@ const loadAllData = useCallback(async () => {
 
     // Free client-side compression (browser built-in) — smaller payload, faster upload.
     const { blob: uploadBlob, compressed } = await compressFileIfSupported(file);
-    const formData = new FormData();
-    formData.append('course_id', String(courseId));
-    formData.append('document_type', kind);
-    formData.append('compressed', compressed ? '1' : '0');
-    formData.append('file', uploadBlob, file.name);
 
     const startedAt = Date.now();
     let prevLoaded = 0;
     let prevAt = startedAt;
     let speed = 0;
+    const onProgress = (e: { loaded: number; total: number }) => {
+      if (!e.total) return;
+      const now = Date.now();
+      const dt = Math.max(0.2, (now - prevAt) / 1000);
+      const instMbS = ((e.loaded - prevLoaded) / (1024 * 1024)) / dt;
+      speed = speed === 0 ? instMbS : speed * 0.6 + instMbS * 0.4;
+      prevLoaded = e.loaded;
+      prevAt = now;
+      setSpeed(Math.round(speed * 10) / 10);
+      setProgress(Math.min(99, Math.round((e.loaded / e.total) * 100)));
+      setSeconds(Math.floor((now - startedAt) / 1000));
+    };
 
     try {
-      const data = (await apiUploadJson('/api/v1/documents/upload', formData, (e) => {
-        if (!e.total) return;
-        const now = Date.now();
-        const dt = Math.max(0.2, (now - prevAt) / 1000);
-        const instMbS = ((e.loaded - prevLoaded) / (1024 * 1024)) / dt;
-        speed = speed === 0 ? instMbS : speed * 0.6 + instMbS * 0.4;
-        prevLoaded = e.loaded;
-        prevAt = now;
-        setSpeed(Math.round(speed * 10) / 10);
-        setProgress(Math.min(99, Math.round((e.loaded / e.total) * 100)));
-        setSeconds(Math.floor((now - startedAt) / 1000));
-      })) as DocumentInfo;
+      // Large files go in ~4 MB parts so neither the network nor the server
+      // has to buffer the whole file at once (small hosts OOM otherwise).
+      const data = (
+        uploadBlob.size > CHUNKED_UPLOAD_THRESHOLD
+          ? await apiUploadFileChunked(
+              uploadBlob,
+              file.name,
+              { course_id: courseId, document_type: kind, compressed },
+              onProgress,
+            )
+          : await ((): Promise<unknown> => {
+              const formData = new FormData();
+              formData.append('course_id', String(courseId));
+              formData.append('document_type', kind);
+              formData.append('compressed', compressed ? '1' : '0');
+              formData.append('file', uploadBlob, file.name);
+              return apiUploadJson('/api/v1/documents/upload', formData, onProgress);
+            })()
+      ) as DocumentInfo;
 
       if (data.status === 'pending') {
         // The file was stored instantly; parsing runs in the background worker.

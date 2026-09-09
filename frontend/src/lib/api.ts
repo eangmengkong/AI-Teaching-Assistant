@@ -171,6 +171,112 @@ export async function apiUploadJson(
   return promise;
 }
 
+/* ------------------------------------------------------------------ */
+/* Chunked upload for large files (free, zero npm packages)            */
+/* ------------------------------------------------------------------ */
+
+/** Files larger than this are sent in parts — a whole 100 MB body in one
+ * request OOM-kills small (512 MB RAM) hosting instances. */
+export const CHUNKED_UPLOAD_THRESHOLD = 24 * 1024 * 1024;
+const UPLOAD_CHUNK_SIZE = 4 * 1024 * 1024;
+
+/**
+ * Upload a large blob in ~4 MB parts. Each request is tiny, so neither the
+ * network proxy nor the server needs to buffer the whole file; the server
+ * assembles the parts inside Postgres. Progress is aggregated across parts.
+ */
+export async function apiUploadFileChunked(
+  blob: Blob,
+  filename: string,
+  meta: { course_id: number; document_type: string; compressed: boolean },
+  onProgress?: (e: UploadProgress) => void,
+): Promise<unknown> {
+  const totalChunks = Math.max(1, Math.ceil(blob.size / UPLOAD_CHUNK_SIZE));
+
+  const init = await api<{ document_id: number; chunk_size: number }>(
+    '/api/v1/documents/upload/init',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        course_id: meta.course_id,
+        document_type: meta.document_type,
+        filename,
+        mime_type: blob.type || undefined,
+        size: blob.size,
+        total_chunks: totalChunks,
+      }),
+    },
+  );
+
+  const sendChunk = (seq: number, part: Blob, baseLoaded: number) =>
+    new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', endpointUrl(`/api/v1/documents/upload/${init.document_id}/chunk`));
+      Object.entries(authHeaders()).forEach(([k, v]) => xhr.setRequestHeader(k, v));
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+          return;
+        }
+        let detail: unknown;
+        try {
+          detail = JSON.parse(xhr.responseText)?.detail;
+        } catch {
+          /* non-JSON error body */
+        }
+        reject(
+          new ApiError(
+            typeof detail === 'string' ? detail : `Chunk upload failed with status ${xhr.status}`,
+            xhr.status,
+          ),
+        );
+      };
+      xhr.onerror = () =>
+        reject(
+          new ApiError(
+            'A part of the upload did not reach the server (network or browser-extension issue). ' +
+              'Try a private window or a more stable connection.',
+            0,
+          ),
+        );
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && onProgress) {
+          onProgress({ loaded: baseLoaded + e.loaded, total: blob.size });
+        }
+      };
+      const form = new FormData();
+      form.append('seq', String(seq));
+      form.append('chunk', part, `part-${seq}`);
+      xhr.send(form);
+    });
+
+  for (let seq = 0; seq < totalChunks; seq += 1) {
+    const start = seq * UPLOAD_CHUNK_SIZE;
+    const part = blob.slice(start, Math.min(blob.size, start + UPLOAD_CHUNK_SIZE));
+    // Retry each part (idempotent on the server) before giving up.
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        await sendChunk(seq, part, start);
+        lastError = null;
+        break;
+      } catch (err) {
+        lastError = err;
+        if (err instanceof ApiError && err.status >= 400 && err.status < 500 && err.status !== 429) {
+          break; // permanent client error — retrying will not help
+        }
+        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+      }
+    }
+    if (lastError) throw lastError;
+  }
+
+  return api(`/api/v1/documents/upload/${init.document_id}/complete`, {
+    method: 'POST',
+    body: JSON.stringify({ size: blob.size, total_chunks: totalChunks }),
+  });
+}
+
 const TOKEN_KEY = 'ai_ta_token';
 
 export interface AuthSession {

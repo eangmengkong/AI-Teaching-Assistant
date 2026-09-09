@@ -106,6 +106,123 @@ async def test_process_pending_document_builds_rows():
 
 
 @pytest.mark.asyncio
+async def test_chunked_upload_end_to_end():
+    """init -> parts -> complete assembles file_data server-side and flips
+    the document to 'pending' without ever buffering a whole file per part."""
+    from httpx import ASGITransport, AsyncClient
+    from app.core.database import get_db
+    from app.main import app
+    from app.models.models import DocumentUploadChunk
+
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    factory = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
+
+    async def override_get_db():
+        async with factory() as session:
+            yield session
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        payload = b"chunked pdf body " * 4096  # ~64 KB -> 3 parts at 32 KB
+        part_size = 32 * 1024
+        total_chunks = 3
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            init = await client.post(
+                "/api/v1/documents/upload/init",
+                json={
+                    "course_id": 1,
+                    "document_type": "textbook",
+                    "filename": "big.pdf",
+                    "mime_type": "application/pdf",
+                    "size": len(payload),
+                    "total_chunks": total_chunks,
+                },
+            )
+            assert init.status_code == 200, init.text
+            doc_id = init.json()["document_id"]
+
+            for seq in range(total_chunks):
+                part = payload[seq * part_size : (seq + 1) * part_size]
+                res = await client.post(
+                    f"/api/v1/documents/upload/{doc_id}/chunk",
+                    data={"seq": str(seq)},
+                    files={"chunk": ("part", part, "application/octet-stream")},
+                )
+                assert res.status_code == 200, res.text
+
+            done = await client.post(
+                f"/api/v1/documents/upload/{doc_id}/complete",
+                json={"size": len(payload), "total_chunks": total_chunks},
+            )
+            assert done.status_code == 200, done.text
+            body = done.json()
+            assert body["status"] == "pending"
+
+        async with factory() as db:
+            stored = (
+                await db.execute(select(Document).where(Document.id == doc_id))
+            ).scalars().one()
+            assert stored.file_data == payload
+            assert stored.file_size == len(payload)
+            leftovers = (
+                await db.execute(select(DocumentUploadChunk))
+            ).scalars().all()
+            assert leftovers == []
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_chunked_upload_complete_rejects_missing_parts():
+    from httpx import ASGITransport, AsyncClient
+    from app.core.database import get_db
+    from app.main import app
+
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    factory = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
+
+    async def override_get_db():
+        async with factory() as session:
+            yield session
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            init = await client.post(
+                "/api/v1/documents/upload/init",
+                json={
+                    "course_id": 1,
+                    "document_type": "workbook",
+                    "filename": "wb.pdf",
+                    "size": 100000,
+                    "total_chunks": 2,
+                },
+            )
+            doc_id = init.json()["document_id"]
+            await client.post(
+                f"/api/v1/documents/upload/{doc_id}/chunk",
+                data={"seq": "0"},
+                files={"chunk": ("part", b"a" * 1000, "application/octet-stream")},
+            )
+            done = await client.post(
+                f"/api/v1/documents/upload/{doc_id}/complete",
+                json={"size": 100000, "total_chunks": 2},
+            )
+            assert done.status_code == 409
+            assert "1/2" in done.json()["detail"]
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
 async def test_process_pending_document_without_bytes_is_marked_error():
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:

@@ -79,6 +79,24 @@ class Document(Base):
     chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan")
 
 
+class DocumentUploadChunk(Base):
+    """One binary part of a chunked (large) upload.
+
+    Large uploads are split client-side into a few MB each so the free-tier
+    instance never buffers a whole 100 MB file in RAM. On completion the
+    parts are concatenated server-side inside Postgres into documents.file_data.
+    """
+
+    __tablename__ = "document_upload_chunks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    document_id = Column(Integer, ForeignKey("documents.id"), nullable=False, index=True)
+    seq = Column(Integer, nullable=False, index=True)  # 0-based part order
+    data = Column(LargeBinary, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+
 class DocumentPage(Base):
     __tablename__ = "document_pages"
 

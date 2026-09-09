@@ -1,17 +1,18 @@
 import os
 import tempfile
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, Response
 from typing import List, Optional
 # pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
 # pyrefly: ignore [missing-import]
-from sqlalchemy import select
+from sqlalchemy import select, delete, func, text
 
 from app.core.database import get_db
 from app.core.config import settings
 from app.api.v1.auth import get_current_user
-from app.models.models import User, Course, Document
-from app.schemas.schemas import DocumentResponse
+from app.models.models import User, Course, Document, DocumentUploadChunk
+from app.schemas.schemas import DocumentResponse, UploadInitRequest, UploadCompleteRequest
 from app.services.document_service import DocumentService
 from app.services.study_material_service import StudyMaterialService
 from app.services.upload_codec import StreamDecompressor, InvalidCompressedUpload
@@ -107,6 +108,161 @@ async def upload_document(
     await db.commit()
     await db.refresh(doc)
     return doc
+
+# ---------------------------------------------------------------------------
+# Chunked (large file) upload: the client sends a few MB per request so the
+# free-tier instance never buffers a whole 100 MB file in RAM (which OOM-kills
+# it and shows up in the browser as a CORS/connection failure).
+# ---------------------------------------------------------------------------
+
+UPLOAD_CHUNK_MAX_BYTES = 8 * 1024 * 1024
+
+
+@router.post("/upload/init")
+async def upload_init(
+    payload: UploadInitRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    document_type = payload.document_type.lower()
+    if document_type not in ["textbook", "workbook"]:
+        raise HTTPException(status_code=400, detail="document_type must be 'textbook' or 'workbook'")
+    file_ext = os.path.splitext(payload.filename)[1].lower()
+    if file_ext not in ALLOWED_DOCUMENT_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type '{file_ext}'. Allowed: {', '.join(sorted(ALLOWED_DOCUMENT_EXTENSIONS))}",
+        )
+    if payload.size > MAX_UPLOAD_SIZE:
+        raise HTTPException(status_code=413, detail="File exceeds the 500 MB upload limit.")
+    if payload.total_chunks < 1 or payload.size < 1:
+        raise HTTPException(status_code=400, detail="Invalid upload size.")
+
+    # Housekeeping: drop abandoned partial uploads (older than a day).
+    cutoff = datetime.utcnow() - timedelta(days=1)
+    stale = await db.execute(
+        select(Document).where(Document.status == "uploading", Document.created_at < cutoff)
+    )
+    for stale_doc in stale.scalars().all():
+        await db.execute(
+            delete(DocumentUploadChunk).where(DocumentUploadChunk.document_id == stale_doc.id)
+        )
+        await db.delete(stale_doc)
+
+    doc = Document(
+        course_id=payload.course_id,
+        document_type=document_type,
+        filename=payload.filename,
+        file_path="",  # production column is NOT NULL; bytes live in file_data
+        file_data=b"",
+        mime_type=payload.mime_type,
+        file_size=payload.size,
+        total_pages=0,
+        status="uploading",
+    )
+    db.add(doc)
+    await db.commit()
+    await db.refresh(doc)
+    return {"document_id": doc.id, "chunk_size": UPLOAD_CHUNK_MAX_BYTES}
+
+
+@router.post("/upload/{document_id}/chunk")
+async def upload_chunk(
+    document_id: int,
+    seq: int = Form(...),
+    chunk: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+):
+    doc = (
+        await db.execute(select(Document).where(Document.id == document_id))
+    ).scalars().first()
+    if doc is None or doc.status != "uploading":
+        raise HTTPException(status_code=409, detail="Upload session not found or already completed.")
+
+    data = await chunk.read()
+    if len(data) > UPLOAD_CHUNK_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="Chunk too large.")
+    if not data:
+        raise HTTPException(status_code=400, detail="Empty chunk.")
+
+    # Idempotent per part so a client retry never duplicates bytes.
+    await db.execute(
+        delete(DocumentUploadChunk).where(
+            DocumentUploadChunk.document_id == document_id,
+            DocumentUploadChunk.seq == seq,
+        )
+    )
+    db.add(DocumentUploadChunk(document_id=document_id, seq=seq, data=data))
+    await db.commit()
+    return {"received": seq}
+
+
+@router.post("/upload/{document_id}/complete", response_model=DocumentResponse)
+async def upload_complete(
+    document_id: int,
+    payload: UploadCompleteRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    doc = (
+        await db.execute(select(Document).where(Document.id == document_id))
+    ).scalars().first()
+    if doc is None or doc.status != "uploading":
+        raise HTTPException(status_code=409, detail="Upload session not found or already completed.")
+
+    count_result = await db.execute(
+        select(func.count()).select_from(DocumentUploadChunk).where(
+            DocumentUploadChunk.document_id == document_id
+        )
+    )
+    chunk_count = count_result.scalar_one()
+    if chunk_count != payload.total_chunks:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Upload incomplete: received {chunk_count}/{payload.total_chunks} parts.",
+        )
+
+    # Assemble the parts INSIDE Postgres so the app never holds the whole
+    # file in RAM (this is what keeps 100 MB uploads alive on 512 MB
+    # free-tier instances).
+    dialect_name = db.get_bind().dialect.name
+    if dialect_name == "postgresql":
+        await db.execute(
+            text(
+                """
+                UPDATE documents SET
+                    file_data = agg.data,
+                    file_size = octet_length(agg.data),
+                    status = 'pending'
+                FROM (
+                    SELECT document_id, string_agg(data, ''::bytea ORDER BY seq) AS data
+                    FROM document_upload_chunks
+                    WHERE document_id = :doc_id
+                    GROUP BY document_id
+                ) AS agg
+                WHERE documents.id = agg.document_id AND documents.id = :doc_id
+                """
+            ),
+            {"doc_id": document_id},
+        )
+    else:
+        # SQLite (local dev/tests): small files, concat in Python.
+        parts = (
+            await db.execute(
+                select(DocumentUploadChunk.data)
+                .where(DocumentUploadChunk.document_id == document_id)
+                .order_by(DocumentUploadChunk.seq)
+            )
+        ).scalars().all()
+        doc.file_data = b"".join(parts)
+        doc.file_size = len(doc.file_data)
+        doc.status = "pending"
+
+    await db.execute(
+        delete(DocumentUploadChunk).where(DocumentUploadChunk.document_id == document_id)
+    )
+    await db.commit()
+    await db.refresh(doc)
+    return doc
+
 
 @router.get("/{course_id}", response_model=List[DocumentResponse])
 async def list_course_documents(

@@ -114,6 +114,20 @@ class RescheduleRequest(BaseModel):
     new_date: date
     reason: Optional[str] = None
 
+
+# Chunked (large file) upload schemas
+class UploadInitRequest(BaseModel):
+    course_id: int
+    document_type: str  # "textbook" or "workbook"
+    filename: str
+    mime_type: Optional[str] = None
+    size: int  # exact byte size the client will send
+    total_chunks: int
+
+class UploadCompleteRequest(BaseModel):
+    size: int
+    total_chunks: int
+
 class SkipRequest(BaseModel):
     lesson_id: int
     reason: Optional[str] = None
