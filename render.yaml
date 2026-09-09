@@ -73,3 +73,5 @@ services:
       # (no trailing slash needed)
       - key: FRONTEND_URL
         sync: false
+      - key: MAX_UPLOAD_SIZE_MB
+        value: "500"

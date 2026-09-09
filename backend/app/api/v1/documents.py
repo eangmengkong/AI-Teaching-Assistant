@@ -16,9 +16,8 @@ from app.services.study_material_service import StudyMaterialService
 
 router = APIRouter()
 
-# Upload guardrails shared by the CLI/API and mirrored in the frontend.
 ALLOWED_DOCUMENT_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt"}
-MAX_UPLOAD_SIZE = 500 * 1024 * 1024  # 500 MB
+MAX_UPLOAD_SIZE = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
 
 @router.post("/upload", response_model=DocumentResponse)
