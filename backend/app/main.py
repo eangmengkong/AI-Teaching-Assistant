@@ -1,6 +1,7 @@
 import asyncio
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
 from app.core.config import settings
@@ -12,11 +13,9 @@ from app.worker import start_background_worker
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create DB tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
-    # Start background server-side reminder worker task
     worker_task = asyncio.create_task(start_background_worker())
     
     yield
@@ -29,7 +28,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Enable CORS for Next.js web dashboard
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -37,6 +35,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    import traceback
+    tb = traceback.format_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal server error: {str(exc)}", "traceback": tb}
+    )
 
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 app.include_router(courses.router, prefix=f"{settings.API_V1_STR}/courses", tags=["courses"])

@@ -126,7 +126,7 @@ export default function DocumentsPage() {
             </li>
           </ul>
           <div className="mt-5 rounded-xl border border-app-border bg-app-surface-2 p-3 text-xs text-app-muted">
-            PDF, DOCX, DOC &amp; TXT are supported — up to 25 MB per file. Page numbers in the schedule stay clickable.
+            PDF, DOCX, DOC &amp; TXT are supported — up to 500 MB per file. Page numbers in the schedule stay clickable.
           </div>
           <Button
             variant="secondary"

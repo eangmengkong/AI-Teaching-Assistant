@@ -200,13 +200,13 @@ const loadAllData = useCallback(async () => {
 
     setUploading(true);
     setSeconds(0);
-    setProgress(10);
+    setProgress(5);
 
     const startedAt = Date.now();
     const interval = setInterval(() => {
       setSeconds(Math.floor((Date.now() - startedAt) / 1000));
-      setProgress((prev) => (prev < 92 ? Math.min(95, prev + Math.floor(Math.random() * 8) + 2) : 95));
-    }, 400);
+      setProgress((prev) => (prev < 90 ? Math.min(90, prev + Math.floor(Math.random() * 5) + 1) : 90));
+    }, 500);
 
     const formData = new FormData();
     formData.append('course_id', String(courseId));
@@ -220,12 +220,17 @@ const loadAllData = useCallback(async () => {
       if (isTextbook) setTextbookDoc(updated);
       else setWorkbookDoc(updated);
       showToast('success', `${isTextbook ? 'Textbook' : 'Workbook'} uploaded & processed`);
-      await reload();
-    } catch (err) {
-      showToast('error', `Upload failed: ${err instanceof Error ? err.message : 'unknown error'}`);
-    } finally {
       clearInterval(interval);
       setUploading(false);
+    } catch (err) {
+      clearInterval(interval);
+      setUploading(false);
+      const errorMsg = err instanceof Error ? err.message : 'unknown error';
+      if (errorMsg.includes('abort') || errorMsg.includes('timeout')) {
+        showToast('error', 'Upload timed out. Please try again with a stable connection.');
+      } else {
+        showToast('error', `Upload failed: ${errorMsg}`);
+      }
     }
   };
 const generateSchedule = async () => {
@@ -376,7 +381,6 @@ const completeToday = async () => {
         setCourseId(created.id);
       }
       showToast('success', 'Course settings saved');
-      await reload();
     } catch (err) {
       showToast('error', `Could not save settings: ${err instanceof Error ? err.message : 'unknown error'}`);
     } finally {

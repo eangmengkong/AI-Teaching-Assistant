@@ -67,14 +67,20 @@ export function authHeaders(): Record<string, string> {
  */
 export async function api<T = unknown>(path: string, init?: RequestInit): Promise<T> {
   const isFormData = init?.body instanceof FormData;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30 * 60 * 1000);
+
   const res = await fetch(endpointUrl(path), {
     ...init,
+    signal: controller.signal,
     headers: {
       ...authHeaders(),
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(init?.headers ?? {}),
     },
   });
+
+  clearTimeout(timeoutId);
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));

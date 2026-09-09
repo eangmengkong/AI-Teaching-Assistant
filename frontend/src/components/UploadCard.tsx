@@ -7,7 +7,7 @@ import { useRef, useState } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import ProgressBar from './ProgressBar';
 
-export const MAX_UPLOAD_SIZE = 25 * 1024 * 1024; // match backend
+export const MAX_UPLOAD_SIZE = 500 * 1024 * 1024; // match backend (500 MB)
 export const ALLOWED_EXTENSIONS = ['.pdf', '.docx', '.doc', '.txt'];
 
 interface UploadCardProps {
@@ -46,7 +46,7 @@ function validateFile(file: File): string | null {
     return `Unsupported file type "${ext}". Allowed: PDF, DOCX, DOC, TXT.`;
   }
   if (file.size > MAX_UPLOAD_SIZE) {
-    return 'File exceeds the 25 MB upload limit.';
+    return 'File exceeds the 500 MB upload limit.';
   }
   return null;
 }
@@ -155,7 +155,7 @@ export default function UploadCard({
 
       <p className="flex items-center justify-center gap-1.5 text-center text-[11px] text-app-faint">
         <UploadCloud className="h-3.5 w-3.5" aria-hidden />
-        Drag &amp; drop a PDF / DOCX / TXT here (max 25 MB) or click to browse
+        Drag &amp; drop a PDF / DOCX / TXT here (max 500 MB) or click to browse
       </p>
 
       {uploading && (

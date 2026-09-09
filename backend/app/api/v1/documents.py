@@ -18,7 +18,7 @@ router = APIRouter()
 
 # Upload guardrails shared by the CLI/API and mirrored in the frontend.
 ALLOWED_DOCUMENT_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt"}
-MAX_UPLOAD_SIZE = 25 * 1024 * 1024  # 25 MB
+MAX_UPLOAD_SIZE = 500 * 1024 * 1024  # 500 MB
 
 
 @router.post("/upload", response_model=DocumentResponse)
@@ -51,7 +51,7 @@ async def upload_document(
                 if written > MAX_UPLOAD_SIZE:
                     raise HTTPException(
                         status_code=413,
-                        detail="File exceeds the 25 MB upload limit.",
+                        detail="File exceeds the 500 MB upload limit.",
                     )
                 buffer.write(chunk)
     except HTTPException:
