@@ -18,6 +18,8 @@ interface UploadCardProps {
   uploading: boolean;
   progress: number;
   seconds: number;
+  /** Optional measured upload speed in MB/s (real progress, not a fake timer). */
+  speedMbPerSec?: number;
   fileName?: { filename: string; total_pages: number } | null;
   onFile: (file: File) => void;
   onInvalid?: (message: string) => void;
@@ -58,6 +60,7 @@ export default function UploadCard({
   uploading,
   progress,
   seconds,
+  speedMbPerSec = 0,
   fileName,
   onFile,
   onInvalid,
@@ -163,7 +166,8 @@ export default function UploadCard({
           <div className="flex justify-between text-xs font-mono text-app-muted">
             <span>Processing…</span>
             <span>
-              {progress}% ({seconds}s)
+              {progress}% ({seconds}s
+              {speedMbPerSec > 0 ? ` · ${speedMbPerSec} MB/s` : ''})
             </span>
           </div>
           <ProgressBar value={progress} color={config.barColor} />

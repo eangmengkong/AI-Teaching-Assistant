@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { api, apiBlob, openBlobInNewTab, safeGet } from './api';
+import { api, apiBlob, apiUploadJson, compressFileIfSupported, openBlobInNewTab, safeGet } from './api';
 import { useToast } from './useToast';
 import type { ToastData, ToastType } from './useToast';
 import type {
@@ -80,6 +80,8 @@ export interface CourseDashboard {
   wbSeconds: number;
   tbProgress: number;
   wbProgress: number;
+  tbSpeedMbS: number;
+  wbSpeedMbS: number;
   uploadFile: (file: File, kind: 'textbook' | 'workbook') => Promise<void>;
   analyzingSchedule: boolean;
   scheduleProgress: number;
@@ -124,6 +126,8 @@ export function useDashboardData(): CourseDashboard {
   const [wbSeconds, setWbSeconds] = useState(0);
   const [tbProgress, setTbProgress] = useState(0);
   const [wbProgress, setWbProgress] = useState(0);
+  const [tbSpeedMbS, setTbSpeedMbS] = useState(0);
+  const [wbSpeedMbS, setWbSpeedMbS] = useState(0);
 
   const [analyzingSchedule, setAnalyzingSchedule] = useState(false);
   const [scheduleProgress, setScheduleProgress] = useState(0);
@@ -197,34 +201,81 @@ const loadAllData = useCallback(async () => {
     const setUploading = isTextbook ? setUploadingTb : setUploadingWb;
     const setSeconds = isTextbook ? setTbSeconds : setWbSeconds;
     const setProgress = isTextbook ? setTbProgress : setWbProgress;
+    const setSpeed = isTextbook ? setTbSpeedMbS : setWbSpeedMbS;
 
     setUploading(true);
     setSeconds(0);
-    setProgress(5);
+    setProgress(2);
+    setSpeed(0);
 
-    const startedAt = Date.now();
-    const interval = setInterval(() => {
-      setSeconds(Math.floor((Date.now() - startedAt) / 1000));
-      setProgress((prev) => (prev < 90 ? Math.min(90, prev + Math.floor(Math.random() * 5) + 1) : 90));
-    }, 500);
-
+    // Free client-side compression (browser built-in) — smaller payload, faster upload.
+    const { blob: uploadBlob, compressed } = await compressFileIfSupported(file);
     const formData = new FormData();
     formData.append('course_id', String(courseId));
     formData.append('document_type', kind);
-    formData.append('file', file);
+    formData.append('compressed', compressed ? '1' : '0');
+    formData.append('file', uploadBlob, file.name);
+
+    const startedAt = Date.now();
+    let prevLoaded = 0;
+    let prevAt = startedAt;
+    let speed = 0;
 
     try {
-      const data = await api<DocumentInfo>('/api/v1/documents/upload', { method: 'POST', body: formData });
-      setProgress(100);
+      const data = (await apiUploadJson('/api/v1/documents/upload', formData, (e) => {
+        if (!e.total) return;
+        const now = Date.now();
+        const dt = Math.max(0.2, (now - prevAt) / 1000);
+        const instMbS = ((e.loaded - prevLoaded) / (1024 * 1024)) / dt;
+        speed = speed === 0 ? instMbS : speed * 0.6 + instMbS * 0.4;
+        prevLoaded = e.loaded;
+        prevAt = now;
+        setSpeed(Math.round(speed * 10) / 10);
+        setProgress(Math.min(99, Math.round((e.loaded / e.total) * 100)));
+        setSeconds(Math.floor((now - startedAt) / 1000));
+      })) as DocumentInfo;
+
+      if (data.status === 'pending') {
+        // The file was stored instantly; parsing runs in the background worker.
+        // Poll until this document is processed (or fails) so the ready-check
+        // and page counts stay accurate.
+        const deadline = Date.now() + 10 * 60 * 1000;
+        while (Date.now() < deadline) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          const docs = await safeGet<DocumentInfo[]>(`/api/v1/documents/${courseId}`);
+          const match = (docs ?? []).find((d) => d.id === data.id);
+          if (match?.status === 'processed') {
+            const updated = { filename: match.filename, total_pages: match.total_pages || 0 };
+            if (isTextbook) setTextbookDoc(updated);
+            else setWorkbookDoc(updated);
+            setProgress(100);
+            setSpeed(0);
+            setUploading(false);
+            showToast('success', `${isTextbook ? 'Textbook' : 'Workbook'} uploaded & processed`);
+            return;
+          }
+          if (match?.status === 'error') {
+            throw new Error('The server could not process that file.');
+          }
+          setSeconds(Math.floor((Date.now() - startedAt) / 1000));
+          setProgress(99);
+        }
+        setSpeed(0);
+        setUploading(false);
+        showToast('info', 'Upload complete — still processing in the background. It will be ready shortly.');
+        return;
+      }
+
       const updated = { filename: data.filename, total_pages: data.total_pages || 0 };
       if (isTextbook) setTextbookDoc(updated);
       else setWorkbookDoc(updated);
+      setProgress(100);
+      setSpeed(0);
+      setUploading(false);
       showToast('success', `${isTextbook ? 'Textbook' : 'Workbook'} uploaded & processed`);
-      clearInterval(interval);
-      setUploading(false);
     } catch (err) {
-      clearInterval(interval);
       setUploading(false);
+      setSpeed(0);
       const errorMsg = err instanceof Error ? err.message : 'unknown error';
       if (errorMsg.includes('abort') || errorMsg.includes('timeout')) {
         showToast('error', 'Upload timed out. Please try again with a stable connection.');
@@ -426,6 +477,8 @@ return {
     wbSeconds,
     tbProgress,
     wbProgress,
+    tbSpeedMbS,
+    wbSpeedMbS,
     uploadFile,
     analyzingSchedule,
     scheduleProgress,

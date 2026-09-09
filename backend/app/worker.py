@@ -2,6 +2,7 @@ import asyncio
 
 from app.core.database import AsyncSessionLocal
 from app.services.daily_maintenance_service import DailyMaintenanceService
+from app.services.document_processing_service import process_pending_documents
 from app.services.reminder_service import ReminderService
 from app.telegram.bot import TelegramBotHandler
 
@@ -12,6 +13,11 @@ async def start_background_worker():
 
     while True:
         try:
+            # 0. Parse any uploaded documents that are waiting (status 'pending').
+            #    Parsing runs in a worker thread, so big PDFs no longer tie up
+            #    the HTTP request and hit proxy timeouts.
+            await process_pending_documents()
+
             async with AsyncSessionLocal() as db:
                 # 1. Schedule upcoming 24h/1h reminders into telegram_messages table
                 await ReminderService.schedule_upcoming_reminders(db)

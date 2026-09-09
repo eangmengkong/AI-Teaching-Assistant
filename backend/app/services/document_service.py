@@ -1,8 +1,9 @@
+import asyncio
 import os
 import re
 from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from app.models.models import Document, DocumentPage, DocumentChunk, WorkbookExercise
 
 try:
@@ -64,6 +65,55 @@ class DocumentService:
         await db.commit()
         await db.refresh(doc)
         return doc
+
+    @staticmethod
+    async def process_uploaded_document(db: AsyncSession, doc: Document) -> None:
+        """Parse an already-stored (pending) document and build its search rows.
+
+        The CPU-bound extraction runs in a worker thread so the event loop (and
+        therefore the whole API on a single-instance server) is not blocked on
+        big PDFs. Existing page/chunk/exercise rows are replaced so re-running
+        is safe and idempotent.
+        """
+        file_ext = os.path.splitext(doc.filename)[1].lower()
+        pages_content = await asyncio.to_thread(
+            DocumentService._extract_for_ext,
+            file_ext,
+            doc.file_data or b"",
+            doc.filename,
+        )
+
+        await db.execute(delete(DocumentPage).where(DocumentPage.document_id == doc.id))
+        await db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == doc.id))
+        await db.execute(delete(WorkbookExercise).where(WorkbookExercise.document_id == doc.id))
+
+        for page_num, text in enumerate(pages_content, start=1):
+            db.add(
+                DocumentPage(
+                    document_id=doc.id,
+                    page_number=page_num,
+                    content=text,
+                    clean_text=text.strip(),
+                )
+            )
+            for chunk in DocumentService._parse_page_chunks(doc.id, page_num, text, doc.document_type):
+                db.add(chunk)
+            if doc.document_type.lower() == "workbook":
+                for ex in DocumentService._parse_workbook_exercises(doc.course_id, doc.id, page_num, text):
+                    db.add(ex)
+
+        doc.total_pages = len(pages_content)
+        doc.status = "processed"
+
+    @staticmethod
+    def _extract_for_ext(file_ext: str, file_data: bytes, filename: str) -> List[str]:
+        if file_ext == ".pdf":
+            return DocumentService._extract_pdf("", file_data)
+        if file_ext in (".docx", ".doc"):
+            return DocumentService._extract_docx("", file_data)
+        if file_ext == ".txt":
+            return DocumentService._extract_txt("", file_data)
+        raise ValueError(f"Unsupported file type: {file_ext}")
 
     @staticmethod
     def _extract_pdf(file_path: str, file_data: bytes = None) -> List[str]:

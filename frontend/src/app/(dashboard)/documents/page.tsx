@@ -25,6 +25,8 @@ export default function DocumentsPage() {
     wbSeconds,
     tbProgress,
     wbProgress,
+    tbSpeedMbS,
+    wbSpeedMbS,
     uploadFile,
   } = useDashboardData();
 
@@ -60,6 +62,7 @@ export default function DocumentsPage() {
                 uploading={uploadingTb}
                 progress={tbProgress}
                 seconds={tbSeconds}
+                speedMbPerSec={tbSpeedMbS}
                 fileName={textbookDoc}
                 onFile={(file) => void uploadFile(file, 'textbook')}
                 onInvalid={(message) => showToast('error', message)}
@@ -71,6 +74,7 @@ export default function DocumentsPage() {
                 uploading={uploadingWb}
                 progress={wbProgress}
                 seconds={wbSeconds}
+                speedMbPerSec={wbSpeedMbS}
                 fileName={workbookDoc}
                 onFile={(file) => void uploadFile(file, 'workbook')}
                 onInvalid={(message) => showToast('error', message)}

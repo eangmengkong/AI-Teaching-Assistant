@@ -57,6 +57,120 @@ async function fetchOrThrow(path: string, init?: RequestInit): Promise<Response>
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* Faster file upload support (free, zero npm packages)                */
+/* ------------------------------------------------------------------ */
+
+export interface UploadProgress {
+  loaded: number;
+  total: number;
+}
+
+type CompressionStreamCtor = new (encoding: string) => {
+  readable: ReadableStream<Uint8Array>;
+  writable: WritableStream<Uint8Array>;
+};
+
+/** Extensions that benefit from client-side DEFLATE before upload. */
+const COMPRESSIBLE_EXTENSIONS = new Set(['.pdf', '.txt']);
+
+/**
+ * Compress the file with the browser's free built-in `CompressionStream`
+ * before uploading it. This is 100% free (no service, no npm package) and
+ * shrinks the payload, so big PDFs/TXT uploads take less wall-clock time.
+ *
+ * Gracefully skips compression when: the browser lacks the API, the file is
+ * not text-like (DOCX/DOC are already ZIP), the file is tiny, or compression
+ * would not help. The server accepts both compressed and plain uploads.
+ */
+export async function compressFileIfSupported(
+  file: File,
+): Promise<{ blob: Blob; compressed: boolean }> {
+  const ext = `.${file.name.split('.').pop()?.toLowerCase() ?? ''}`;
+  if (!COMPRESSIBLE_EXTENSIONS.has(ext)) return { blob: file, compressed: false };
+  if (file.size < 256 * 1024) return { blob: file, compressed: false };
+
+  const CompressionStream = (
+    globalThis as unknown as { CompressionStream?: CompressionStreamCtor }
+  ).CompressionStream;
+  if (typeof CompressionStream !== 'function') return { blob: file, compressed: false };
+
+  const bodyStream = new Response(file).body as ReadableStream<Uint8Array> | null;
+  if (!bodyStream || typeof bodyStream.pipeThrough !== 'function') {
+    return { blob: file, compressed: false };
+  }
+
+  try {
+    const compressor = new CompressionStream('deflate');
+    const compressedBody = bodyStream.pipeThrough(compressor);
+    const blob = await new Response(compressedBody).blob();
+    if (!blob || blob.size >= file.size) return { blob: file, compressed: false };
+    return { blob, compressed: true };
+  } catch {
+    return { blob: file, compressed: false };
+  }
+}
+
+/**
+ * POST a multipart FormData body with real upload progress.
+ *
+ * Uses XMLHttpRequest `upload.onprogress` (free & built-in) so the UI can show
+ * actual bytes transferred / MB per second instead of a fake timer.
+ */
+export async function apiUploadJson(
+  path: string,
+  form: FormData,
+  onProgress?: (e: UploadProgress) => void,
+): Promise<unknown> {
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', endpointUrl(path));
+
+  const headers = authHeaders();
+  Object.entries(headers).forEach(([key, value]) => xhr.setRequestHeader(key, value));
+
+  const timeoutId = setTimeout(() => xhr.abort(), 30 * 60 * 1000);
+
+  const promise = new Promise<unknown>((resolve, reject) => {
+    if (xhr.upload) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && onProgress) onProgress({ loaded: e.loaded, total: e.total });
+      };
+    }
+
+    xhr.onload = () => {
+      clearTimeout(timeoutId);
+      let data: unknown = {};
+      try {
+        data = JSON.parse(xhr.responseText);
+      } catch {
+        // non-JSON error body — fall through to the status-based message
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(data);
+        return;
+      }
+      const detail = (data as { detail?: unknown }).detail;
+      const message =
+        typeof detail === 'string' ? detail : `Request failed with status ${xhr.status}`;
+      reject(new ApiError(message, xhr.status));
+    };
+
+    xhr.onerror = () => {
+      clearTimeout(timeoutId);
+      reject(
+        new ApiError(
+          'The upload did not reach the server (network or browser-extension issue). ' +
+            'Try a private window (extensions are disabled there) or a more stable connection.',
+          0,
+        ),
+      );
+    };
+  });
+
+  xhr.send(form);
+  return promise;
+}
+
 const TOKEN_KEY = 'ai_ta_token';
 
 export interface AuthSession {

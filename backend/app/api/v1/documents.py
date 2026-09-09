@@ -13,6 +13,7 @@ from app.models.models import User, Course, Document
 from app.schemas.schemas import DocumentResponse
 from app.services.document_service import DocumentService
 from app.services.study_material_service import StudyMaterialService
+from app.services.upload_codec import decompress_payload, InvalidCompressedUpload
 
 router = APIRouter()
 
@@ -25,6 +26,7 @@ async def upload_document(
     course_id: int = Form(...),
     document_type: str = Form(...), # "textbook" or "workbook"
     file: UploadFile = File(...),
+    compressed: int = Form(0), # 1 when the client deflated the payload (PDF/TXT)
     db: AsyncSession = Depends(get_db)
 ):
     if document_type.lower() not in ["textbook", "workbook"]:
@@ -38,43 +40,50 @@ async def upload_document(
             detail=f"Unsupported file type '{file_ext}'. Allowed: {', '.join(sorted(ALLOWED_DOCUMENT_EXTENSIONS))}",
         )
 
-    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-    file_location = os.path.join(settings.UPLOAD_DIR, f"c{course_id}_{document_type}_{filename}")
-
-    file_bytes = b""
+    # Read the body (decompressing when the dashboard pre-compressed it).
+    raw = b""
     written = 0
     try:
-        with open(file_location, "wb") as buffer:
-            while chunk := await file.read(1024 * 1024):
-                written += len(chunk)
-                file_bytes += chunk
-                if written > MAX_UPLOAD_SIZE:
-                    raise HTTPException(
-                        status_code=413,
-                        detail="File exceeds the 500 MB upload limit.",
-                    )
-                buffer.write(chunk)
+        while chunk := await file.read(1024 * 1024):
+            written += len(chunk)
+            if written > MAX_UPLOAD_SIZE:
+                raise HTTPException(
+                    status_code=413,
+                    detail="File exceeds the 500 MB upload limit.",
+                )
+            raw += chunk
     except HTTPException:
-        if os.path.exists(file_location):
-            os.remove(file_location)
         raise
 
     try:
-        doc = await DocumentService.process_document(
-            db=db,
-            course_id=course_id,
-            document_type=document_type.lower(),
-            filename=filename,
-            file_path=file_location,
-            file_data=file_bytes
+        file_bytes = decompress_payload(raw, bool(compressed))
+    except InvalidCompressedUpload:
+        raise HTTPException(status_code=400, detail="Invalid compressed upload data.")
+    if len(file_bytes) > MAX_UPLOAD_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail="File exceeds the 500 MB upload limit.",
         )
-        if os.path.exists(file_location):
-            os.remove(file_location)
-        return doc
-    except Exception as e:
-        if os.path.exists(file_location):
-            os.remove(file_location)
-        raise HTTPException(status_code=500, detail=f"Failed to process document: {str(e)}")
+
+    # Store the file immediately and return. Parsing pages/search chunks is
+    # done by the background worker (status 'pending' -> 'processed'), so a
+    # large upload only takes as long as the network transfer, never the
+    # CPU-bound text extraction.
+    doc = Document(
+        course_id=course_id,
+        document_type=document_type.lower(),
+        filename=filename,
+        file_path=None,
+        file_data=file_bytes,
+        mime_type=file.content_type,
+        file_size=len(file_bytes),
+        total_pages=0,
+        status="pending",
+    )
+    db.add(doc)
+    await db.commit()
+    await db.refresh(doc)
+    return doc
 
 @router.get("/{course_id}", response_model=List[DocumentResponse])
 async def list_course_documents(
