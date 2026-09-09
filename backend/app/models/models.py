@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    Column, Integer, String, Text, Boolean, DateTime, Date, Time, Float, ForeignKey, JSON
+    Column, Integer, String, Text, Boolean, DateTime, Date, Time, Float, ForeignKey, JSON, LargeBinary
 )
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -64,9 +64,10 @@ class Document(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
-    document_type = Column(String(50), nullable=False) # "textbook" or "workbook"
+    document_type = Column(String(50), nullable=False)
     filename = Column(String(255), nullable=False)
-    file_path = Column(String(500), nullable=False)
+    file_path = Column(String(500), nullable=True)
+    file_data = Column(LargeBinary, nullable=True)
     mime_type = Column(String(100), nullable=True)
     file_size = Column(Integer, nullable=True)
     total_pages = Column(Integer, default=0)

@@ -71,13 +71,16 @@ class StudyMaterialService:
     # ------------------------------------------------------------ PDF building
 
     @staticmethod
-    def extract_pages_pdf(source_path: str, pages: List[int]) -> bytes:
+    def extract_pages_pdf(source_path: str, pages: List[int], file_data: bytes = None) -> bytes:
         """Build a new PDF containing only `pages` (1-based), with a bookmark
         per original page number so navigation is easy while studying."""
         if PdfReader is None or PdfWriter is None:
             raise ValueError("pypdf is not installed on the server.")
         try:
-            reader = PdfReader(source_path)
+            if file_data:
+                reader = PdfReader(io.BytesIO(file_data))
+            else:
+                reader = PdfReader(source_path)
         except Exception as e:  # corrupted / encrypted file
             raise ValueError(f"Could not read the PDF file: {e}")
         writer = PdfWriter()
@@ -127,7 +130,7 @@ class StudyMaterialService:
             raise LookupError(
                 f"No {document_type} uploaded for course {course_id}. Upload it in the Documents section first."
             )
-        if not doc.file_path or not os.path.exists(doc.file_path):
+        if (not doc.file_data) and (not doc.file_path or not os.path.exists(doc.file_path)):
             raise LookupError(f"The {document_type} file is missing on disk ({doc.file_path}).")
         if not StudyMaterialService._is_pdf_file(doc):
             raise ValueError(
@@ -141,12 +144,15 @@ class StudyMaterialService:
         total = doc.total_pages or 0
         if not total:
             try:
-                total = len(PdfReader(doc.file_path).pages)
+                if doc.file_data:
+                    total = len(PdfReader(io.BytesIO(doc.file_data)).pages)
+                else:
+                    total = len(PdfReader(doc.file_path).pages)
             except Exception:
                 total = 0
 
         pages = StudyMaterialService.parse_page_spec(page_spec, total)
-        pdf_bytes = StudyMaterialService.extract_pages_pdf(doc.file_path, pages)
+        pdf_bytes = StudyMaterialService.extract_pages_pdf(doc.file_path or "", pages, doc.file_data)
         info = f"pages={','.join(map(str, pages))};total={total}"
         filename = StudyMaterialService._pdf_filename(course_name, document_type, pages)
         return pdf_bytes, filename, info
@@ -187,7 +193,7 @@ class StudyMaterialService:
             if not doc:
                 skipped.append({"kind": kind, "reason": f"No {kind} uploaded for this course yet."})
                 continue
-            if not doc.file_path or not os.path.exists(doc.file_path):
+            if (not doc.file_data) and (not doc.file_path or not os.path.exists(doc.file_path)):
                 skipped.append({"kind": kind, "reason": f"The {kind} file is missing on disk."})
                 continue
             if not StudyMaterialService._is_pdf_file(doc):
@@ -198,7 +204,10 @@ class StudyMaterialService:
             total = doc.total_pages or 0
             if not total:
                 try:
-                    total = len(PdfReader(doc.file_path).pages)
+                    if doc.file_data:
+                        total = len(PdfReader(io.BytesIO(doc.file_data)).pages)
+                    else:
+                        total = len(PdfReader(doc.file_path).pages)
                 except Exception:
                     total = 0
             try:
@@ -217,7 +226,7 @@ class StudyMaterialService:
                         f"{kind.capitalize()} pages {spec}\n"
                         f"{lesson.unit} – {lesson.lesson} ({lesson.date.isoformat()})"
                     ),
-                    "pdf": StudyMaterialService.extract_pages_pdf(doc.file_path, pages),
+                    "pdf": StudyMaterialService.extract_pages_pdf(doc.file_path or "", pages, doc.file_data),
                 }
             )
 

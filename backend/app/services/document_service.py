@@ -18,32 +18,31 @@ except ImportError:
 
 class DocumentService:
     @staticmethod
-    async def process_document(db: AsyncSession, course_id: int, document_type: str, filename: str, file_path: str) -> Document:
+    async def process_document(db: AsyncSession, course_id: int, document_type: str, filename: str, file_path: str, file_data: bytes = None) -> Document:
         file_ext = os.path.splitext(filename)[1].lower()
         pages_content = []
 
         if file_ext == '.pdf':
-            pages_content = DocumentService._extract_pdf(file_path)
+            pages_content = DocumentService._extract_pdf(file_path, file_data)
         elif file_ext in ['.docx', '.doc']:
-            pages_content = DocumentService._extract_docx(file_path)
+            pages_content = DocumentService._extract_docx(file_path, file_data)
         elif file_ext == '.txt':
-            pages_content = DocumentService._extract_txt(file_path)
+            pages_content = DocumentService._extract_txt(file_path, file_data)
         else:
             raise ValueError(f"Unsupported file type: {file_ext}")
 
-        # Create Document record
         doc = Document(
             course_id=course_id,
             document_type=document_type,
             filename=filename,
             file_path=file_path,
+            file_data=file_data,
             total_pages=len(pages_content),
             status="processed"
         )
         db.add(doc)
         await db.flush()
 
-        # Save pages and extract chunks
         for page_num, text in enumerate(pages_content, start=1):
             doc_page = DocumentPage(
                 document_id=doc.id,
@@ -53,12 +52,10 @@ class DocumentService:
             )
             db.add(doc_page)
 
-            # Analyze page content for Units/Chapters/Lessons/Exercises
             chunks = DocumentService._parse_page_chunks(doc.id, page_num, text, document_type)
             for chunk in chunks:
                 db.add(chunk)
 
-            # If workbook, extract structured exercises
             if document_type.lower() == 'workbook':
                 exercises = DocumentService._parse_workbook_exercises(course_id, doc.id, page_num, text)
                 for ex in exercises:
@@ -69,42 +66,56 @@ class DocumentService:
         return doc
 
     @staticmethod
-    def _extract_pdf(file_path: str) -> List[str]:
+    def _extract_pdf(file_path: str, file_data: bytes = None) -> List[str]:
         pages = []
         if pypdf:
-            reader = pypdf.PdfReader(file_path)
+            if file_data:
+                import io
+                reader = pypdf.PdfReader(io.BytesIO(file_data))
+            else:
+                reader = pypdf.PdfReader(file_path)
             for page in reader.pages:
                 pages.append(page.extract_text() or "")
         else:
-            # Fallback simple text read if pypdf not available
-            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                pages = [f.read()]
+            if file_data:
+                pages = [file_data.decode('utf-8', errors='ignore')]
+            else:
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    pages = [f.read()]
         return pages
 
     @staticmethod
-    def _extract_docx(file_path: str) -> List[str]:
+    def _extract_docx(file_path: str, file_data: bytes = None) -> List[str]:
         pages = []
         if docx:
-            doc = docx.Document(file_path)
+            if file_data:
+                import io
+                doc = docx.Document(io.BytesIO(file_data))
+            else:
+                doc = docx.Document(file_path)
             current_page_text = []
             for p in doc.paragraphs:
                 current_page_text.append(p.text)
-                # Split roughly every ~500 words to simulate pages if docx has no page breaks
                 if len('\n'.join(current_page_text).split()) > 400:
                     pages.append('\n'.join(current_page_text))
                     current_page_text = []
             if current_page_text:
                 pages.append('\n'.join(current_page_text))
         else:
-            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                pages = [f.read()]
+            if file_data:
+                pages = [file_data.decode('utf-8', errors='ignore')]
+            else:
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    pages = [f.read()]
         return pages if pages else [""]
 
     @staticmethod
-    def _extract_txt(file_path: str) -> List[str]:
-        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-            content = f.read()
-        # Split into ~3000 character pages
+    def _extract_txt(file_path: str, file_data: bytes = None) -> List[str]:
+        if file_data:
+            content = file_data.decode('utf-8', errors='ignore')
+        else:
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read()
         chunk_size = 3000
         pages = [content[i:i+chunk_size] for i in range(0, len(content), chunk_size)]
         return pages if pages else [""]

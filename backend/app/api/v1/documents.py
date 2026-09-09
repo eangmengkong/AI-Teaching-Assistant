@@ -41,12 +41,13 @@ async def upload_document(
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
     file_location = os.path.join(settings.UPLOAD_DIR, f"c{course_id}_{document_type}_{filename}")
 
-    # Stream to disk while enforcing the size limit (avoids buffering huge files).
+    file_bytes = b""
     written = 0
     try:
         with open(file_location, "wb") as buffer:
             while chunk := await file.read(1024 * 1024):
                 written += len(chunk)
+                file_bytes += chunk
                 if written > MAX_UPLOAD_SIZE:
                     raise HTTPException(
                         status_code=413,
@@ -64,8 +65,11 @@ async def upload_document(
             course_id=course_id,
             document_type=document_type.lower(),
             filename=filename,
-            file_path=file_location
+            file_path=file_location,
+            file_data=file_bytes
         )
+        if os.path.exists(file_location):
+            os.remove(file_location)
         return doc
     except Exception as e:
         if os.path.exists(file_location):
