@@ -47,7 +47,7 @@ async def get_current_user(token: Optional[str] = Depends(oauth2_scheme), db: As
     if not user:
         user = User(
             email="teacher@local.com",
-            hashed_password="default_hashed_password_123",
+            hashed_password=get_password_hash("defaultpassword123"),
             full_name="Default Teacher"
         )
         db.add(user)

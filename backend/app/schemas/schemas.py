@@ -14,7 +14,7 @@ class UserResponse(BaseModel):
     email: EmailStr
     full_name: Optional[str] = None
     telegram_chat_id: Optional[str] = None
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -67,7 +67,7 @@ class CourseResponse(CourseCreate):
     id: int
     user_id: int
     status: str
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -80,7 +80,7 @@ class DocumentResponse(BaseModel):
     filename: str
     total_pages: int
     status: str
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
