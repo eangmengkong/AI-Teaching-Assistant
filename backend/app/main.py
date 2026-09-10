@@ -14,13 +14,19 @@ from app.worker import start_background_worker
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    # create_all only creates missing tables - it never adds columns that were
-    # introduced after the database was first created. Sync those here so the
-    # docs/upload endpoints do not fail with "column X does not exist" in prod.
-    await run_schema_migrations(engine)
+    # Attempt DB setup with retry so temporary network/database cold-start delays
+    # do not crash the container and trigger a Render deployment failure.
+    for attempt in range(1, 4):
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            await run_schema_migrations(engine)
+            print(f"[Startup] Database schema initialized successfully (attempt {attempt})")
+            break
+        except Exception as exc:
+            print(f"[Startup Warning] Database initialization attempt {attempt} failed: {exc}")
+            if attempt < 3:
+                await asyncio.sleep(2)
 
     worker_task = asyncio.create_task(start_background_worker())
 
