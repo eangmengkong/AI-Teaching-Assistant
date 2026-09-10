@@ -37,11 +37,23 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["Content-Disposition", "X-Study-Pages"],
 )
+
+
+def is_allowed_origin(origin: str) -> bool:
+    if not origin:
+        return False
+    clean_origin = origin.rstrip("/")
+    if clean_origin in [o.rstrip("/") for o in settings.CORS_ORIGINS]:
+        return True
+    if clean_origin.endswith(".vercel.app") or clean_origin.startswith("http://localhost"):
+        return True
+    return False
 
 
 def build_cors_headers(origin: str) -> dict:
@@ -54,7 +66,7 @@ def build_cors_headers(origin: str) -> dict:
     unexpected 5xx would reach browsers as a confusing "blocked by CORS" error
     instead of the real HTTP 500 status and body.
     """
-    if origin and origin in settings.CORS_ORIGINS:
+    if is_allowed_origin(origin):
         return {
             "Access-Control-Allow-Origin": origin,
             "Vary": "Origin",
