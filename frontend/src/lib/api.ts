@@ -204,6 +204,7 @@ export async function apiUploadFileChunked(
         mime_type: blob.type || undefined,
         size: blob.size,
         total_chunks: totalChunks,
+        compressed: meta.compressed,
       }),
     },
   );
@@ -273,7 +274,7 @@ export async function apiUploadFileChunked(
 
   return api(`/api/v1/documents/upload/${init.document_id}/complete`, {
     method: 'POST',
-    body: JSON.stringify({ size: blob.size, total_chunks: totalChunks }),
+    body: JSON.stringify({ size: blob.size, total_chunks: totalChunks, compressed: meta.compressed }),
   });
 }
 

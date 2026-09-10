@@ -12,11 +12,12 @@ async def start_background_worker():
     asyncio.create_task(TelegramBotHandler.poll_updates())
 
     while True:
+        handled = 0
         try:
             # 0. Parse any uploaded documents that are waiting (status 'pending').
             #    Parsing runs in a worker thread, so big PDFs no longer tie up
             #    the HTTP request and hit proxy timeouts.
-            await process_pending_documents()
+            handled = await process_pending_documents()
 
             async with AsyncSessionLocal() as db:
                 # 1. Schedule upcoming 24h/1h reminders into telegram_messages table
@@ -32,7 +33,7 @@ async def start_background_worker():
         except Exception as e:
             print(f"[Worker Exception] {str(e)}")
             
-        await asyncio.sleep(30) # Run cycle every 30 seconds
+        await asyncio.sleep(1 if handled > 0 else 5) # Faster cycle when processing documents
 
 if __name__ == "__main__":
     asyncio.run(start_background_worker())

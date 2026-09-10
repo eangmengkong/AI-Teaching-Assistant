@@ -123,10 +123,12 @@ class UploadInitRequest(BaseModel):
     mime_type: Optional[str] = None
     size: int  # exact byte size the client will send
     total_chunks: int
+    compressed: Optional[bool] = False
 
 class UploadCompleteRequest(BaseModel):
     size: int
     total_chunks: int
+    compressed: Optional[bool] = False
 
 class SkipRequest(BaseModel):
     lesson_id: int

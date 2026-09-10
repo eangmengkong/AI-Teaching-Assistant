@@ -1,11 +1,10 @@
+import asyncio
 import os
 import tempfile
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, Response
 from typing import List, Optional
-# pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
-# pyrefly: ignore [missing-import]
 from sqlalchemy import select, delete, func, text
 
 from app.core.database import get_db
@@ -14,8 +13,9 @@ from app.api.v1.auth import get_current_user
 from app.models.models import User, Course, Document, DocumentUploadChunk
 from app.schemas.schemas import DocumentResponse, UploadInitRequest, UploadCompleteRequest
 from app.services.document_service import DocumentService
+from app.services.document_processing_service import process_pending_documents
 from app.services.study_material_service import StudyMaterialService
-from app.services.upload_codec import StreamDecompressor, InvalidCompressedUpload
+from app.services.upload_codec import StreamDecompressor, InvalidCompressedUpload, decompress_payload
 
 router = APIRouter()
 
@@ -107,6 +107,7 @@ async def upload_document(
     db.add(doc)
     await db.commit()
     await db.refresh(doc)
+    asyncio.create_task(process_pending_documents())
     return doc
 
 # ---------------------------------------------------------------------------
@@ -231,7 +232,9 @@ async def upload_complete(
                 UPDATE documents SET
                     file_data = agg.data,
                     file_size = octet_length(agg.data),
-                    status = 'pending'
+                    status = 'pending',
+                    total_pages = 0,
+                    file_path = ''
                 FROM (
                     SELECT document_id, string_agg(data, ''::bytea ORDER BY seq) AS data
                     FROM document_upload_chunks
@@ -255,12 +258,26 @@ async def upload_complete(
         doc.file_data = b"".join(parts)
         doc.file_size = len(doc.file_data)
         doc.status = "pending"
+        doc.total_pages = 0
 
     await db.execute(
         delete(DocumentUploadChunk).where(DocumentUploadChunk.document_id == document_id)
     )
     await db.commit()
     await db.refresh(doc)
+
+    # Decompress concatenated payload if client compressed it
+    if payload.compressed and doc.file_data:
+        try:
+            decompressed = decompress_payload(doc.file_data, compressed=True)
+            doc.file_data = decompressed
+            doc.file_size = len(decompressed)
+            await db.commit()
+            await db.refresh(doc)
+        except Exception:
+            pass
+
+    asyncio.create_task(process_pending_documents())
     return doc
 
 

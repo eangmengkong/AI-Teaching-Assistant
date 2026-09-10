@@ -107,6 +107,13 @@ class DocumentService:
 
     @staticmethod
     def _extract_for_ext(file_ext: str, file_data: bytes, filename: str) -> List[str]:
+        if file_data and file_ext == ".pdf" and not file_data.startswith(b"%PDF"):
+            try:
+                from app.services.upload_codec import decompress_payload
+                file_data = decompress_payload(file_data, compressed=True)
+            except Exception:
+                pass
+
         if file_ext == ".pdf":
             return DocumentService._extract_pdf("", file_data)
         if file_ext in (".docx", ".doc"):
@@ -118,14 +125,30 @@ class DocumentService:
     @staticmethod
     def _extract_pdf(file_path: str, file_data: bytes = None) -> List[str]:
         pages = []
+        if file_data and not file_data.startswith(b"%PDF"):
+            try:
+                from app.services.upload_codec import decompress_payload
+                file_data = decompress_payload(file_data, compressed=True)
+            except Exception:
+                pass
+
         if pypdf:
-            if file_data:
-                import io
-                reader = pypdf.PdfReader(io.BytesIO(file_data))
-            else:
-                reader = pypdf.PdfReader(file_path)
-            for page in reader.pages:
-                pages.append(page.extract_text() or "")
+            import io
+            stream = io.BytesIO(file_data) if file_data else file_path
+            try:
+                reader = pypdf.PdfReader(stream, strict=False)
+                for page in reader.pages:
+                    try:
+                        text = page.extract_text() or ""
+                    except Exception:
+                        text = ""
+                    pages.append(text)
+            except Exception:
+                if file_data:
+                    pages = [file_data.decode('utf-8', errors='ignore')]
+                else:
+                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        pages = [f.read()]
         else:
             if file_data:
                 pages = [file_data.decode('utf-8', errors='ignore')]
