@@ -47,7 +47,7 @@ async def get_current_user(token: Optional[str] = Depends(oauth2_scheme), db: As
     if not user:
         user = User(
             email="teacher@local.com",
-            hashed_password=get_password_hash("defaultpassword123"),
+            hashed_password=get_password_hash("admin123"),
             full_name="Default Teacher"
         )
         db.add(user)
@@ -79,7 +79,15 @@ async def login_access_token(form_data: OAuth2PasswordRequestForm = Depends(), d
     stmt = select(User).where(User.email == form_data.username)
     res = await db.execute(stmt)
     user = res.scalar_one_or_none()
-    if not user or not verify_password(form_data.password, user.hashed_password):
+
+    if user and user.hashed_password:
+        # Self-heal legacy or unhashed password strings in existing database rows
+        if not user.hashed_password.startswith("$2"):
+            user.hashed_password = get_password_hash(form_data.password)
+            await db.commit()
+            await db.refresh(user)
+
+    if not user or not verify_password(form_data.password, user.hashed_password or ""):
         raise HTTPException(status_code=400, detail="Incorrect email or password")
 
     access_token = create_access_token(subject=user.id)

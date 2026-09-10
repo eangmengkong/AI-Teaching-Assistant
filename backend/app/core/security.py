@@ -19,9 +19,11 @@ def create_access_token(subject: Union[str, Any], expires_delta: timedelta = Non
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    if not plain_password or not hashed_password:
+        return False
     try:
         return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
-    except (ValueError, TypeError):
+    except Exception:
         return False
 
 
