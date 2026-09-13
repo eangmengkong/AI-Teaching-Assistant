@@ -106,13 +106,20 @@ async def test_process_pending_document_builds_rows():
 
 
 @pytest.mark.asyncio
-async def test_chunked_upload_end_to_end():
+async def test_chunked_upload_end_to_end(monkeypatch):
     """init -> parts -> complete assembles file_data server-side and flips
     the document to 'pending' without ever buffering a whole file per part."""
     from httpx import ASGITransport, AsyncClient
     from app.core.database import get_db
     from app.main import app
     from app.models.models import DocumentUploadChunk
+
+    # Never let tests talk to the real Cloudflare R2 bucket: when live R2
+    # credentials exist in backend/.env the upload endpoint would push the
+    # fake PDF into the real bucket (and file_data would stay NULL, breaking
+    # the assertions below). Force the DB-storage fallback for this test.
+    import app.services.file_store as file_store
+    monkeypatch.setattr(file_store, "r2_enabled", lambda: False)
 
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:
