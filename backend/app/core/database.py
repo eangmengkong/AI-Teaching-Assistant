@@ -16,7 +16,15 @@ engine = create_async_engine(
     get_async_db_url(settings.DATABASE_URL),
     echo=False,
     future=True,
-    pool_pre_ping=True
+    pool_pre_ping=True,
+    # Resilience for free-tier DB blips (e.g. Aiven single-node stalls):
+    # never let a request hang forever on a stalled connection.
+    pool_recycle=1800,      # replace pooled connections older than 30 min
+    pool_timeout=10,        # max wait for a free pool slot before erroring
+    connect_args={
+        "timeout": 10,          # asyncpg connect timeout (seconds)
+        "command_timeout": 60,  # per-query timeout (seconds)
+    },
 )
 
 AsyncSessionLocal = async_sessionmaker(
