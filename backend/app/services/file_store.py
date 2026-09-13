@@ -82,6 +82,34 @@ def build_document_key(course_id: int, document_type: str, filename: str) -> str
     )
 
 
+def store_document_file(
+    course_id: int,
+    document_type: str,
+    filename: str,
+    path: str,
+    mime_type: str = "application/octet-stream",
+) -> str:
+    """Upload a file already on disk to R2 and return the remote path.
+
+    Uses boto3's multipart ``upload_fileobj`` so large assembled uploads
+    (hundreds of MB) stream from disk in small parts - the whole file is
+    never held in RAM. This keeps the DB free of giant BYTEA rows on
+    free-tier Postgres nodes that choke on them.
+    """
+    client = _get_client()
+    if client is None:
+        raise RuntimeError("Cloudflare R2 is not configured; falling back to DB storage.")
+    key = build_document_key(course_id, document_type, filename)
+    with open(path, "rb") as fh:
+        client.upload_fileobj(
+            fh,
+            Bucket=settings.R2_BUCKET,
+            Key=key,
+            ExtraArgs={"ContentType": mime_type or "application/octet-stream"},
+        )
+    return f"{REMOTE_PREFIX}{key}"
+
+
 def store_document_bytes(
     course_id: int,
     document_type: str,
