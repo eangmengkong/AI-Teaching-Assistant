@@ -83,12 +83,26 @@ class DocumentService:
                 "Document has no readable file bytes "
                 "(missing from R2 object, local disk and file_data)."
             )
-        pages_content = await asyncio.to_thread(
-            DocumentService._extract_for_ext,
-            file_ext,
-            file_bytes,
-            doc.filename,
-        )
+        # Hard cap on extraction: scanned/image-only PDFs can grind for a very
+        # long time on small containers (and if the container OOMs mid-parse,
+        # the worker would retry forever). Bound it so the worker always
+        # recovers and stays available for reminders.
+        try:
+            pages_content = await asyncio.wait_for(
+                asyncio.to_thread(
+                    DocumentService._extract_for_ext,
+                    file_ext,
+                    file_bytes,
+                    doc.filename,
+                ),
+                timeout=600,  # 10 minutes max per document
+            )
+        except asyncio.TimeoutError as exc:
+            raise ValueError(
+                f"Parsing '{doc.filename}' exceeded the 10-minute limit "
+                "(very large or scanned PDF); marked as error instead of "
+                "retrying forever."
+            ) from exc
 
         await db.execute(delete(DocumentPage).where(DocumentPage.document_id == doc.id))
         await db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == doc.id))
