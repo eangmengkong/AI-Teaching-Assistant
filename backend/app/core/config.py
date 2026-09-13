@@ -65,6 +65,26 @@ class Settings(BaseSettings):
     R2_SECRET_ACCESS_KEY: str = os.getenv("R2_SECRET_ACCESS_KEY", "")
     R2_BUCKET: str = os.getenv("R2_BUCKET", "")
 
+    # ---------------------------------------------------------------------------
+    # OCR fallback (scanned/image-only PDFs). pypdf extracts 0 characters from
+    # image-only pages, so when a PDF has essentially no text and an AI vision
+    # provider is configured, each page is rendered to an image and transcribed
+    # by the AI (Gemini vision works great for Khmer/Chinese textbooks).
+    # ---------------------------------------------------------------------------
+    OCR_ENABLED: bool = os.getenv("OCR_ENABLED", "true").strip().lower() in (
+        "1", "true", "yes", "on"
+    )
+    # Safety caps: a whole scanned textbook is hundreds of vision calls, so
+    # bound both the page count and the pace (free tiers are rate-limited).
+    OCR_MAX_PAGES: int = int(os.getenv("OCR_MAX_PAGES", "400"))
+    # Seconds between vision requests (Gemini free ~10 RPM -> keep >= 6).
+    OCR_REQUEST_INTERVAL: float = float(os.getenv("OCR_REQUEST_INTERVAL", "6"))
+    # Render resolution for page images (higher = better OCR, bigger payload).
+    OCR_IMAGE_DPI: int = int(os.getenv("OCR_IMAGE_DPI", "110"))
+    # A page is considered "textless" when the whole PDF yields fewer chars
+    # than this per page on average (cover pages may carry a little text).
+    OCR_MIN_CHARS_PER_PAGE: int = int(os.getenv("OCR_MIN_CHARS_PER_PAGE", "20"))
+
     # Allowed browser origins for CORS (comma-separated in the CORS_ORIGINS env
     # var). Origins must be explicit: the "*" wildcard cannot be combined with
     # allow_credentials=True, so a fixed allow-list is the only spec-compliant

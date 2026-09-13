@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import re
 from typing import List, Dict, Any
@@ -6,6 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from app.models.models import Document, DocumentPage, DocumentChunk, WorkbookExercise
 from app.services import file_store
+from app.services import ocr_service
+
+logger = logging.getLogger(__name__)
 
 try:
     import pypdf
@@ -95,7 +99,7 @@ class DocumentService:
                     file_bytes,
                     doc.filename,
                 ),
-                timeout=600,  # 10 minutes max per document
+                timeout=ocr_service.parse_timeout_seconds(),  # 10 min base + OCR budget
             )
         except asyncio.TimeoutError as exc:
             raise ValueError(
@@ -156,15 +160,30 @@ class DocumentService:
         if pypdf:
             import io
             stream = io.BytesIO(file_data) if file_data else file_path
-            try:
-                reader = pypdf.PdfReader(stream, strict=False)
-                for page in reader.pages:
-                    try:
-                        text = page.extract_text() or ""
-                    except Exception:
-                        text = ""
-                    pages.append(text)
-            except Exception:
+        try:
+            reader = pypdf.PdfReader(stream, strict=False)
+            for page in reader.pages:
+                try:
+                    text = page.extract_text() or ""
+                except Exception:
+                    text = ""
+                pages.append(text)
+
+            # OCR fallback: scanned/image-only PDFs have no extractable text,
+            # so the teaching pipeline would get nothing. If the AI vision
+            # provider is configured, transcribe the page images instead.
+            if (
+                file_data
+                and ocr_service.ocr_enabled()
+                and ocr_service.needs_ocr(pages)
+            ):
+                logger.info(
+                    "PDF is textless (%d chars on %d pages) -> OCR fallback",
+                    sum(len(p.strip()) for p in pages),
+                    len(pages),
+                )
+                pages = ocr_service.ocr_pdf(file_data)
+        except Exception:
                 if file_data:
                     pages = [file_data.decode('utf-8', errors='ignore')]
                 else:
