@@ -2,6 +2,7 @@ import asyncio
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from contextlib import asynccontextmanager
 
 from app.core.config import settings
@@ -81,8 +82,34 @@ def build_cors_headers(origin: str) -> dict:
     return {}
 
 
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """HTTP errors that carry an explicit status code (404, 405, 409, 413, ...).
+
+    Registered EXPLICITLY so HTTP-derived status codes (route/method
+    mismatches, ``raise HTTPException(...)`` in handlers) are answered with
+    their real status code and can never be swallowed by the generic 500
+    catch-all below. Preserves the ``Allow`` header FastAPI attaches to 405
+    responses and echoes CORS headers (see build_cors_headers).
+    """
+    headers = dict(getattr(exc, "headers", None) or {})
+    headers.update(build_cors_headers(request.headers.get("origin", "")))
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": getattr(exc, "detail", str(exc))},
+        headers=headers or None,
+    )
+
+
 @app.exception_handler(Exception)
 async def generic_exception_handler(request: Request, exc: Exception):
+    """Unexpected errors (DB outage, quota, bugs) -> HTTP 500 with CORS headers.
+
+    Only genuine 5xx surface here: every deliberate HTTP error is already
+    answered by ``http_exception_handler`` above, so a browser hitting e.g.
+    POST on a GET-only route sees a real 405 ``{"detail": "Method Not
+    Allowed"}`` instead of a confusing 500.
+    """
     import traceback
     tb = traceback.format_exc()
     return JSONResponse(

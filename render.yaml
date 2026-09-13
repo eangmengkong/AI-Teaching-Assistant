@@ -9,8 +9,9 @@
 # sleep-tolerant: anything due while asleep is delivered right after wake-up
 # and the daily digest is deduped per day, so nothing is lost or duplicated.
 #
-# NOTE: free tier has no persistent disk - re-upload course PDFs after a
-# redeploy (redeploys only happen when you push new code).
+# NOTE: free tier has no persistent disk - the file bytes are NOT stored on the
+# Render disk: they live in Cloudflare R2 (object storage) or in the database
+# (legacy fallback).
 
 services:
   - type: web
@@ -75,8 +76,21 @@ services:
         sync: false
       - key: MAX_UPLOAD_SIZE_MB
         value: "500"
+      # Cloudflare R2 object storage: the actual uploaded file bytes go here
+      # (10 GB-month free + unlimited free egress) so the database transfer
+      # quota (Neon free = 5 GB/month) is never burned on multi-MB PDFs.
+      # Create R2 -> API Tokens -> "Manage R2 Tokens" -> token scoped to one
+      # bucket with Object Read & Write, then fill in the four values below.
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET
+        sync: false
       # Scratch dir used while an upload is being processed (files themselves
-      # are persisted in the database via Document.file_data, so this only
-      # ever holds transient temp files).
+      # live in Cloudflare R2 / Document.file_data, so this only ever holds
+      # transient temp files).
       - key: UPLOAD_DIR
         value: /tmp/ai_teaching_uploads

@@ -22,8 +22,9 @@ logger = logging.getLogger(__name__)
 # (table, column, column type SQL). Keep entries additive and idempotent so
 # re-runs against an already-migrated database are no-ops.
 _SCHEMA_MIGRATIONS: List[Tuple[str, str, str]] = [
-    # The app stores uploaded file bytes in the DB so documents survive
-    # redeploys on Render's ephemeral disk.
+    # Legacy column: file bytes used to live here. New uploads go to Cloudflare
+    # R2 (documents.file_path = "r2://..."), but the column must stay for
+    # existing rows until the backfill script has moved them.
     ("documents", "file_data", "BYTEA"),
 ]
 

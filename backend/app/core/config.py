@@ -49,10 +49,21 @@ class Settings(BaseSettings):
 
     # Upload storage
     MAX_UPLOAD_SIZE_MB: int = int(os.getenv("MAX_UPLOAD_SIZE_MB", "500"))
-    # Transient scratch directory used while processing an upload. The natural
-    # home for the file bytes is the database (Document.file_data), so keeping
-    # the disk copy here is fine even on Render's ephemeral file system.
+    # Transient scratch directory used while processing an upload. The actual
+    # file bytes live in Cloudflare R2 (or Document.file_data as a fallback),
+    # so keeping the disk copy here is fine even on Render's ephemeral file
+    # system.
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "./uploads")
+
+    # Cloudflare R2 object storage: stores the actual uploaded file bytes so the
+    # database (Neon free = 5 GB transfer/month) is never loaded with multi-MB
+    # PDFs. R2 is S3-compatible -> talk to it with boto3.
+    # Create R2 -> API Tokens -> "Manage R2 Tokens" -> create a token with
+    # Object Read & Write scoped to one bucket, then set these four values.
+    R2_ACCOUNT_ID: str = os.getenv("R2_ACCOUNT_ID", "")
+    R2_ACCESS_KEY_ID: str = os.getenv("R2_ACCESS_KEY_ID", "")
+    R2_SECRET_ACCESS_KEY: str = os.getenv("R2_SECRET_ACCESS_KEY", "")
+    R2_BUCKET: str = os.getenv("R2_BUCKET", "")
 
     # Allowed browser origins for CORS (comma-separated in the CORS_ORIGINS env
     # var). Origins must be explicit: the "*" wildcard cannot be combined with

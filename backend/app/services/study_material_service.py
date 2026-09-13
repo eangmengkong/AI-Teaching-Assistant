@@ -7,6 +7,7 @@ Study material service: turn "Textbook pages 10-20" into real PDFs.
 - Delivers study PDFs to Telegram (sendDocument) so the teacher can read or
   study the exact material for lessons, quizzes and exams on the phone.
 """
+import asyncio
 import io
 import os
 import re
@@ -18,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.models.models import Course, Document, LessonSchedule
+from app.services import file_store
 
 try:
     from pypdf import PdfReader, PdfWriter
@@ -130,8 +132,9 @@ class StudyMaterialService:
             raise LookupError(
                 f"No {document_type} uploaded for course {course_id}. Upload it in the Documents section first."
             )
-        if (not doc.file_data) and (not doc.file_path or not os.path.exists(doc.file_path)):
-            raise LookupError(f"The {document_type} file is missing on disk ({doc.file_path}).")
+        file_bytes = await asyncio.to_thread(file_store.load_document_bytes, doc)
+        if not file_bytes:
+            raise LookupError(f"The {document_type} file is missing (no R2 object, DB copy or local file for '{doc.filename}').")
         if not StudyMaterialService._is_pdf_file(doc):
             raise ValueError(
                 f"Page extraction works on PDF files only, but the uploaded {document_type} is "
@@ -144,15 +147,12 @@ class StudyMaterialService:
         total = doc.total_pages or 0
         if not total:
             try:
-                if doc.file_data:
-                    total = len(PdfReader(io.BytesIO(doc.file_data)).pages)
-                else:
-                    total = len(PdfReader(doc.file_path).pages)
+                total = len(PdfReader(io.BytesIO(file_bytes)).pages)
             except Exception:
                 total = 0
 
         pages = StudyMaterialService.parse_page_spec(page_spec, total)
-        pdf_bytes = StudyMaterialService.extract_pages_pdf(doc.file_path or "", pages, doc.file_data)
+        pdf_bytes = StudyMaterialService.extract_pages_pdf("", pages, file_bytes)
         info = f"pages={','.join(map(str, pages))};total={total}"
         filename = StudyMaterialService._pdf_filename(course_name, document_type, pages)
         return pdf_bytes, filename, info
@@ -193,8 +193,9 @@ class StudyMaterialService:
             if not doc:
                 skipped.append({"kind": kind, "reason": f"No {kind} uploaded for this course yet."})
                 continue
-            if (not doc.file_data) and (not doc.file_path or not os.path.exists(doc.file_path)):
-                skipped.append({"kind": kind, "reason": f"The {kind} file is missing on disk."})
+            file_bytes = await asyncio.to_thread(file_store.load_document_bytes, doc)
+            if not file_bytes:
+                skipped.append({"kind": kind, "reason": f"The {kind} file is missing (no R2 object, DB copy or local file)."})
                 continue
             if not StudyMaterialService._is_pdf_file(doc):
                 skipped.append(
@@ -204,10 +205,7 @@ class StudyMaterialService:
             total = doc.total_pages or 0
             if not total:
                 try:
-                    if doc.file_data:
-                        total = len(PdfReader(io.BytesIO(doc.file_data)).pages)
-                    else:
-                        total = len(PdfReader(doc.file_path).pages)
+                    total = len(PdfReader(io.BytesIO(file_bytes)).pages)
                 except Exception:
                     total = 0
             try:
@@ -226,7 +224,7 @@ class StudyMaterialService:
                         f"{kind.capitalize()} pages {spec}\n"
                         f"{lesson.unit} – {lesson.lesson} ({lesson.date.isoformat()})"
                     ),
-                    "pdf": StudyMaterialService.extract_pages_pdf(doc.file_path or "", pages, doc.file_data),
+                    "pdf": StudyMaterialService.extract_pages_pdf("", pages, file_bytes),
                 }
             )
 

@@ -16,6 +16,7 @@ from app.services.document_service import DocumentService
 from app.services.document_processing_service import process_pending_documents
 from app.services.study_material_service import StudyMaterialService
 from app.services.upload_codec import StreamDecompressor, InvalidCompressedUpload, decompress_payload
+from app.services import file_store
 
 router = APIRouter()
 
@@ -91,14 +92,35 @@ async def upload_document(
     # done by the background worker (status 'pending' -> 'processed'), so a
     # large upload only takes as long as the network transfer, never the
     # CPU-bound text extraction.
+    #
+    # Preferred home for the bytes is Cloudflare R2 (keeps the DB transfer
+    # quota untouched); if R2 is unavailable we fall back to database storage.
+    remote_path = ""
+    db_bytes: Optional[bytes] = None
+    if file_store.r2_enabled():
+        try:
+            remote_path = await asyncio.to_thread(
+                file_store.store_document_bytes,
+                course_id,
+                document_type.lower(),
+                filename,
+                file_bytes,
+                file.content_type or "application/octet-stream",
+            )
+        except Exception:
+            remote_path = ""
+            db_bytes = file_bytes
+    else:
+        db_bytes = file_bytes
+
     doc = Document(
         course_id=course_id,
         document_type=document_type.lower(),
         filename=filename,
-        # The production column is NOT NULL even though the model allows null,
-        # so store an empty string (the bytes live in file_data).
-        file_path="",
-        file_data=file_bytes,
+        # file_path holds the R2 object path ("r2://...") when stored remotely,
+        # or "" when the bytes are in file_data (fallback).
+        file_path=remote_path,
+        file_data=db_bytes,
         mime_type=file.content_type,
         file_size=len(file_bytes),
         total_pages=0,
@@ -144,6 +166,8 @@ async def upload_init(
         select(Document).where(Document.status == "uploading", Document.created_at < cutoff)
     )
     for stale_doc in stale.scalars().all():
+        if file_store.is_remote_path(stale_doc.file_path):
+            await asyncio.to_thread(file_store.delete_document_path, stale_doc.file_path)
         await db.execute(
             delete(DocumentUploadChunk).where(DocumentUploadChunk.document_id == stale_doc.id)
         )
@@ -272,10 +296,28 @@ async def upload_complete(
             decompressed = decompress_payload(doc.file_data, compressed=True)
             doc.file_data = decompressed
             doc.file_size = len(decompressed)
-            await db.commit()
-            await db.refresh(doc)
         except Exception:
             pass
+
+    # Preferred home for the bytes is Cloudflare R2 (keeps the DB transfer
+    # quota untouched); fall back to database storage when R2 is unavailable.
+    if file_store.r2_enabled() and doc.file_data:
+        try:
+            remote_path = await asyncio.to_thread(
+                file_store.store_document_bytes,
+                doc.course_id,
+                doc.document_type,
+                doc.filename,
+                doc.file_data,
+                doc.mime_type or "application/octet-stream",
+            )
+            doc.file_path = remote_path
+            doc.file_data = None
+        except Exception:
+            pass  # keep the bytes in file_data (fallback)
+
+    await db.commit()
+    await db.refresh(doc)
 
     asyncio.create_task(process_pending_documents())
     return doc

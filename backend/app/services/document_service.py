@@ -5,6 +5,7 @@ from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from app.models.models import Document, DocumentPage, DocumentChunk, WorkbookExercise
+from app.services import file_store
 
 try:
     import pypdf
@@ -76,10 +77,16 @@ class DocumentService:
         is safe and idempotent.
         """
         file_ext = os.path.splitext(doc.filename)[1].lower()
+        file_bytes = await asyncio.to_thread(file_store.load_document_bytes, doc)
+        if not file_bytes:
+            raise ValueError(
+                "Document has no readable file bytes "
+                "(missing from R2 object, local disk and file_data)."
+            )
         pages_content = await asyncio.to_thread(
             DocumentService._extract_for_ext,
             file_ext,
-            doc.file_data or b"",
+            file_bytes,
             doc.filename,
         )
 

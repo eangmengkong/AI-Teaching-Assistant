@@ -75,6 +75,35 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 GOOGLE_REDIRECT_URI=http://localhost:8000/api/v1/calendar/oauth2callback
 ```
 
+### 🗄️ Cloudflare R2 – free file storage (recommended for deployed backends)
+
+If you deploy the backend (Render, etc.), put the uploaded textbook/workbook PDFs in
+**Cloudflare R2** instead of the database. R2 is free (10 GB-month storage **and
+unlimited egress**), and it keeps your database's transfer quota alive — Neon's free
+plan only includes **5 GB of transfer per month**, which multi-MB PDFs burn through in
+days.
+
+1. Cloudflare dashboard → **R2** → **Create bucket**.
+2. **R2 → Manage R2 API Tokens → Create API token** scoped to that bucket with
+   **Object Read & Write**.
+3. Set these in the backend environment (Render dashboard or `backend/.env`):
+
+```env
+R2_ACCOUNT_ID=<your-Cloudflare-account-id-32-hex-chars>
+R2_ACCESS_KEY_ID=<r2-token-access-key-id>
+R2_SECRET_ACCESS_KEY=<r2-token-secret-access-key>
+R2_BUCKET=<your-bucket-name>
+```
+
+No code change is needed: new uploads are stored in R2 automatically; if R2 is not
+configured the app falls back to database storage (old behaviour). To move already
+uploaded files out of the database, run the backfill script once:
+
+```bash
+cd backend
+venv\Scripts\python.exe -m scripts.backfill_documents_to_r2
+```
+
 ### 🆓 Free AI Provider (no OpenAI key needed)
 
 The agent works with **any OpenAI-compatible API** — just set `OPENAI_API_KEY`, `OPENAI_MODEL` and `OPENAI_BASE_URL` in `backend/.env`:
@@ -285,6 +314,20 @@ API process and every 30 seconds:
 docker compose up -d --build
 ```
 `restart: always` keeps all three containers (postgres, backend, frontend) alive across reboots.
+
+### Option D – Oracle Cloud free VM (200 GB database, $0) ⭐ most free storage
+
+Oracle Cloud **Always Free** gives you **200 GB of block storage** on an always-on
+VM plus an Arm A1 instance — far more free storage than any pure cloud database
+tier (Aiven 1 GB, Supabase/Neon 0.5 GB, Turso/TiDB ~5–50 GiB). The full guided
+walkthrough (signup → VM → Docker → HTTPS → data migration → backups) lives in
+[**`DEPLOY-ORACLE.md`**](./DEPLOY-ORACLE.md). No code changes are needed:
+`docker-compose.yml` already forwards every `.env` value into the containers.
+
+**One-command deploy from Windows**: `powershell -ExecutionPolicy Bypass -File scripts\oracle\deploy_windows.ps1`
+— the first run prints your SSH key + Oracle click-path; the second run (`-Ip <PUBLIC_IP>`,
+optionally `-Domain your.api.host`) installs Docker/Caddy, copies your Neon data,
+builds and starts the stack, and schedules nightly backups.
 
 ### Frontend (Vercel – free)
 1. Import the repo in Vercel, set **Root Directory** to `frontend`.

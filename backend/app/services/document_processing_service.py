@@ -9,12 +9,13 @@ browser just waits for the document's status to flip to ``processed``.
 import logging
 from typing import Type
 
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.database import AsyncSessionLocal
 from app.models.models import Document
 from app.services.document_service import DocumentService
+from app.services import file_store
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,13 @@ async def process_pending_documents(
         if retry_errored:
             await db.execute(
                 update(Document)
-                .where(Document.status == "error", Document.file_data.isnot(None))
+                .where(
+                    or_(
+                        Document.file_data.isnot(None),
+                        Document.file_path.startswith(file_store.REMOTE_PREFIX),
+                    ),
+                    Document.status == "error",
+                )
                 .values(status="pending")
             )
         await db.commit()
@@ -61,10 +68,10 @@ async def process_pending_documents(
             for doc in docs:
                 handled += 1
                 doc_id = doc.id
-                if not doc.file_data:
+                if not file_store.has_document_bytes(doc):
                     doc.status = "error"
                     await db.commit()
-                    logger.warning("Pending document %s has no file_data; marked error", doc_id)
+                    logger.warning("Pending document %s has no readable bytes (R2/DB/disk); marked error", doc_id)
                     continue
 
                 doc.status = "processing"

@@ -9,7 +9,9 @@ services:
       POSTGRES_PASSWORD: postgrespassword
       POSTGRES_DB: ai_teaching_assistant
     ports:
-      - "5432:5432"
+      # Bound to localhost only: on a public VM the OS firewall is the barrier,
+      # and the backend reaches postgres over the internal docker network.
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: always
@@ -19,13 +21,38 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: ai_teaching_backend
+    # Every value is read from the root .env at `docker compose up` time via
+    # ${VAR:-default}, so the same compose file works locally and on a server
+    # (Oracle free VM, VPS, ...) with no code changes. Unset vars fall back to
+    # the application defaults in backend/app/core/config.py.
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgrespassword@postgres:5432/ai_teaching_assistant
       - SYNC_DATABASE_URL=postgresql://postgres:postgrespassword@postgres:5432/ai_teaching_assistant
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - SECRET_KEY=${SECRET_KEY:-super-secret-key-change-in-production-2026}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+      - AI_FALLBACK_1_BASE_URL=${AI_FALLBACK_1_BASE_URL:-}
+      - AI_FALLBACK_1_API_KEY=${AI_FALLBACK_1_API_KEY:-}
+      - AI_FALLBACK_1_MODEL=${AI_FALLBACK_1_MODEL:-}
+      - AI_FALLBACK_2_BASE_URL=${AI_FALLBACK_2_BASE_URL:-}
+      - AI_FALLBACK_2_API_KEY=${AI_FALLBACK_2_API_KEY:-}
+      - AI_FALLBACK_2_MODEL=${AI_FALLBACK_2_MODEL:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-http://localhost:8000/api/v1/calendar/oauth2callback}
+      - DAILY_DIGEST_ENABLED=${DAILY_DIGEST_ENABLED:-true}
+      - DAILY_DIGEST_HOUR=${DAILY_DIGEST_HOUR:-7}
+      - GOOGLE_CALENDAR_SYNC_ENABLED=${GOOGLE_CALENDAR_SYNC_ENABLED:-true}
+      - FRONTEND_URL=${FRONTEND_URL:-https://ai-teaching-assistant-eight.vercel.app}
+      - MAX_UPLOAD_SIZE_MB=${MAX_UPLOAD_SIZE_MB:-500}
+      - UPLOAD_DIR=${UPLOAD_DIR:-/tmp/ai_teaching_uploads}
+      - R2_ACCOUNT_ID=${R2_ACCOUNT_ID:-}
+      - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID:-}
+      - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY:-}
+      - R2_BUCKET=${R2_BUCKET:-}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,https://ai-teaching-assistant-eight.vercel.app}
     ports:
       - "8000:8000"
     depends_on:

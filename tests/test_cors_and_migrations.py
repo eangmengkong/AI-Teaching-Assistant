@@ -41,6 +41,7 @@ def _build_test_app() -> FastAPI:
         expose_headers=["Content-Disposition", "X-Study-Pages"],
     )
     app.exception_handler(Exception)(main.generic_exception_handler)
+    app.exception_handler(main.StarletteHTTPException)(main.http_exception_handler)
 
     @app.get("/ok")
     def ok():
@@ -86,6 +87,17 @@ def test_foreign_origin_still_gets_no_cors_headers():
         res = client.get("/boom", headers={"Origin": FOREIGN_ORIGIN})
     assert res.status_code == 500
     assert "access-control-allow-origin" not in res.headers
+
+
+def test_method_not_allowed_stays_405_with_catch_all_handler():
+    # Regression: a route/method mismatch (405) must NEVER be swallowed by the
+    # catch-all Exception handler and turned into an HTTP 500.
+    with TestClient(_build_test_app()) as client:
+        res = client.request("DELETE", "/ok", headers={"Origin": FRONTEND_ORIGIN})
+    assert res.status_code == 405
+    assert res.json()["detail"] == "Method Not Allowed"
+    assert "GET" in (res.headers.get("allow") or "")
+    assert res.headers.get("access-control-allow-origin") == FRONTEND_ORIGIN
 
 
 def test_build_cors_headers_allowlist():
