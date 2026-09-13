@@ -245,8 +245,66 @@ async def upload_complete(
             detail=f"Upload incomplete: received {chunk_count}/{payload.total_chunks} parts.",
         )
 
-    # Assemble the parts INSIDE Postgres so the app never holds the whole
-    # file in RAM (this is what keeps 100 MB uploads alive on 512 MB
+    # Preferred home for the bytes is Cloudflare R2. When R2 is enabled we
+    # stream each part from Postgres to a temp file and upload multipart from
+    # disk, so the database NEVER materializes a giant concatenated BYTEA row
+    # (free-tier Postgres nodes choke on those -> connection resets) and the
+    # 512 MB app instance never holds the whole file in RAM.
+    r2_remote_path = None
+    r2_file_size = 0
+    temp_path = None
+    if file_store.r2_enabled():
+        try:
+            suffix = os.path.splitext(doc.filename or "")[1].lower() or ".bin"
+            fd, temp_path = tempfile.mkstemp(prefix="ata_assemble_", suffix=suffix)
+            os.close(fd)
+            decompressor = StreamDecompressor() if payload.compressed else None
+            part_rows = await db.execute(
+                select(DocumentUploadChunk.data)
+                .where(DocumentUploadChunk.document_id == document_id)
+                .order_by(DocumentUploadChunk.seq)
+                .execution_options(yield_per=1)  # stream one part at a time
+            )
+            with open(temp_path, "wb") as out:
+                for (part,) in part_rows:
+                    if decompressor is not None:
+                        part = decompressor.feed(part)
+                    if part:
+                        out.write(part)
+                        r2_file_size += len(part)
+            r2_remote_path = await asyncio.to_thread(
+                file_store.store_document_file,
+                doc.course_id,
+                doc.document_type,
+                doc.filename,
+                temp_path,
+                doc.mime_type or "application/octet-stream",
+            )
+        except Exception:
+            r2_remote_path = None  # fall back to DB assembly below
+        finally:
+            if temp_path:
+                try:
+                    os.remove(temp_path)
+                except OSError:
+                    pass
+
+    if r2_remote_path:
+        doc.file_path = r2_remote_path
+        doc.file_data = None
+        doc.file_size = r2_file_size
+        doc.status = "pending"
+        doc.total_pages = 0
+        await db.execute(
+            delete(DocumentUploadChunk).where(DocumentUploadChunk.document_id == document_id)
+        )
+        await db.commit()
+        await db.refresh(doc)
+        asyncio.create_task(process_pending_documents())
+        return doc
+
+    # Fallback (no R2 / R2 failed): assemble inside Postgres so the app never
+    # holds the whole file in RAM (keeps 100 MB uploads alive on 512 MB
     # free-tier instances).
     dialect_name = db.get_bind().dialect.name
     if dialect_name == "postgresql":
