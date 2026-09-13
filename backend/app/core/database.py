@@ -21,6 +21,12 @@ engine = create_async_engine(
     # never let a request hang forever on a stalled connection.
     pool_recycle=1800,      # replace pooled connections older than 30 min
     pool_timeout=10,        # max wait for a free pool slot before erroring
+    # Aiven free plan allows only 20 connections (3 reserved by the server ->
+    # 17 usable, incl. Aiven's own background agents). One Render instance =
+    # one process serving API + worker + Telegram poller, so 7 max keeps us
+    # safely under the cap; bursts queue up to 10s instead of erroring.
+    pool_size=3,
+    max_overflow=4,
     connect_args={
         "timeout": 10,          # asyncpg connect timeout (seconds)
         "command_timeout": 60,  # per-query timeout (seconds)
